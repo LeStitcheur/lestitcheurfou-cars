@@ -142,6 +142,24 @@ class Asset:
 
 
 @dataclass
+class ImportedResource:
+    """Ressource FiveM / GTA V importée : provenance et manifeste versionné.
+
+    Le manifeste décrit la ressource d'origine (fichiers, empreintes, modèles, textures,
+    métadonnées, os, état de compatibilité). Les fichiers originaux ne sont jamais modifiés ;
+    des copies sont rangées dans ``assets/fivem/<ressource>/``.
+    """
+
+    name: str
+    source_path: str
+    source_kind: str  # « dossier », « zip », « rpf », « fichier »
+    manifest: dict = field(default_factory=dict)
+    status: str = ""
+    imported_at: str = field(default_factory=utc_now_iso)
+    id: str = field(default_factory=new_id)
+
+
+@dataclass
 class Project:
     name: str
     vehicle_type: VehicleType = VehicleType.CAR
@@ -155,6 +173,7 @@ class Project:
     file_path: Path | None = None
     project_id: str = field(default_factory=new_id)
     thumbnail: bytes | None = None
+    resources: dict[str, ImportedResource] = field(default_factory=dict)
 
     @property
     def project_dir(self) -> Path:

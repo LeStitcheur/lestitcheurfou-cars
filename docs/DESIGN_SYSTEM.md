@@ -1,74 +1,90 @@
-# Design system — suite LeStitcheur
+# Design system — Dark Premium, Automotive Creation Studio
 
-LeStitcheurFou Cars reprend l'identité de **LeStitcheur Control** (même auteur). Les valeurs
-proviennent de son code source (`src/design.css`, couche « workspace 2 », version 2.10) ;
-elles priment sur la palette indicative du cahier des charges lorsqu'elles diffèrent.
+Depuis la version 0.3.0, LeStitcheurFou Cars utilise sa propre direction artistique
+**Dark Premium** : un studio de création automobile sombre, sobre et lisible, à accents bleus.
+L'identité rouge/rose inspirée de LeStitcheur Control (v0.2) est abandonnée.
 
-Code : `src/lsfcars/ui/design/` — `tokens.py`, `qss.py`, `fonts.py`, `icons.py`,
-`components.py`, `sidebar.py`, `topbar.py`.
+Code : `src/lsfcars/ui/design/`
 
-## Couleurs
+| Module | Contenu |
+|---|---|
+| `tokens.py` | `ColorTokens`, `TypographyTokens`, `SpacingTokens` (densités), `AnimationTokens`, `AppTheme`, teintes de badges |
+| `qss.py` | `ComponentStyles` : feuille de style Qt et palette générées depuis les tokens |
+| `fonts.py` | polices système (Segoe UI Variable / Segoe UI, Cascadia Mono) |
+| `icons.py` | icônes Lucide colorées à la volée, logo de l'application |
+| `components.py`, `sidebar.py`, `topbar.py` | composants réutilisables |
+
+## Palette officielle (exclusive)
 
 | Rôle | Token | Valeur |
 |---|---|---|
-| Fond de l'application | `BG` | `#090b0e` |
-| Barre de titre / sidebar | `TITLEBAR`, `SIDEBAR` | `#0d1014` |
-| Panneaux / cartes | `PANEL`, `CARD` | `#11151a`, `#12171d` |
-| Surfaces interactives | `SURFACE`, `SURFACE_HOVER` | `#1b222b`, `#242e3a` |
-| Bordures | `BORDER`, `DIVIDER` | `#29313b`, `#262f39` |
-| **Accent de marque** | `ACCENT` | `#ff4157` |
-| Accent secondaire / survol | `ACCENT_2`, `ACCENT_HOVER` | `#ff5268`, `#ff647f` |
-| Texte actif | `ACCENT_TEXT` | `#ff7384` |
-| Accent sombre | `ACCENT_DARK` | `#35151f` |
-| Textes | `TEXT`, `TEXT_2`, `TEXT_MUTED`, `TEXT_FAINT` | `#f4f6f9`, `#94a8c3`, `#687587`, `#596675` |
-| États | `SUCCESS`, `WARNING`, `ERROR` | `#2cc58a`, `#f4b54a`, `#ff526e` |
-| Axes techniques (gizmos) | `AXIS_X/Y/Z` | `#ff5b5b`, `#7bd88f`, `#4f9dff` |
+| Fond principal | `ColorTokens.BG_MAIN` | `#0B0E14` |
+| Fond secondaire (barre supérieure, navigation) | `BG_SECONDARY` | `#111722` |
+| Panneaux | `PANEL` | `#151B26` |
+| Surfaces (boutons, champs actifs) | `SURFACE` | `#202A3B` |
+| Bordures | `BORDER` | `#2A3445` |
+| **Bleu principal** (sélection, bouton principal, élément actif) | `PRIMARY` | `#2563EB` |
+| **Bleu électrique** (focus, onglet actif, indicateurs, liseré) | `ELECTRIC` | `#38BDF8` |
+| Texte principal | `TEXT` | `#F3F6FC` |
+| Texte secondaire | `TEXT_SECONDARY` | `#94A3B8` |
+| Succès | `SUCCESS` | `#22C55E` |
+| Avertissement | `WARNING` | `#F59E0B` |
+| Erreur | `ERROR` | `#EF4444` |
 
-Le rouge/rose est la couleur de marque ; le bleu-gris est réservé aux textes secondaires.
+Les nuances intermédiaires (survols, fonds teintés des badges, bordures actives, textes
+atténués) sont **dérivées** de ces douze valeurs par `mix()` ou `rgba()` dans `tokens.py` ;
+aucune autre couleur n'est inventée. Les couleurs d'état ne servent qu'à communiquer un état.
+Les axes X/Y/Z du viewport utilisent la convention universelle des outils 3D, exprimée avec la
+palette (erreur, succès, bleu).
+
+Règle vérifiée par `tests/test_design_system.py` : aucun code hexadécimal ni `rgb()` en dehors
+de `tokens.py` dans `src/lsfcars/ui/`. Le moteur de rendu (`render/renderer.py`) lit aussi ses
+couleurs (fond, grille, sélection) dans les tokens.
 
 ## Typographie
 
-- Texte : **DM Sans** 400–700 (OFL 1.1), base 13 px (12 px en mode compact).
-- Marque : **Barlow Condensed** 600–700 (OFL 1.1).
-- Titres de page : 29 px, graisse 650, **point final rouge**.
-- Petites capitales espacées : 9 px, graisse 700, via `fonts.font(..., spacing, caps=True)`
-  (Qt n'interprète pas `letter-spacing` en QSS).
+- Texte : Segoe UI Variable Text (repli Segoe UI), 13 px (12 px en mode compact).
+- Titres : Segoe UI Variable Display, graisse 600.
+- Code et XML : Cascadia Mono (repli Consolas).
+- Petites capitales espacées via `fonts.font(..., spacing, caps=True)` (Qt n'interprète pas
+  `letter-spacing` en QSS).
 
-Polices converties depuis LeStitcheur Control par `scripts/import_brand_assets.py`,
-licences jointes dans `resources/fonts/`.
+Aucune police tierce n'est embarquée.
 
-## Icônes et emblème
+## Espacements et animations
 
-Icônes **Lucide** (ISC), trait 1,7, colorées à la volée. Emblème LSF partagé :
-`resources/brand/emblem.svg`.
+- Échelle : 4 / 8 / 12 / 16 / 24 / 32 px ; deux densités (`NORMAL`, `COMPACT`).
+- Barre supérieure 44 px, navigation 224 px (60 px repliée).
+- Animations courtes : 120 / 170 / 260 ms ; toasts 4,2 s ; aucune animation permanente.
 
 ## Composants
 
 | Composant | Usage |
 |---|---|
-| `LSButton` | `primary` (rouge), `secondary`, `ghost`, `danger`, option `small` |
-| `LSIconButton` | bouton icône, état coché rouge sombre |
-| `LSCard` | carte anthracite arrondie, en-tête optionnel, `interactive` |
-| `LSSectionHeader`, `Breadcrumb`, `eyebrow`, `heading` | en-tête de page |
-| `LSStatsGrid`, `LSStatCell`, `LSIconBox` | cartes statistiques |
-| `LSBadge` | badges `neutral`, `red`, `green`, `amber`, `blue` |
-| `LSInput`, `LSSelect`, `LSTabs`, `LSProgress` | champs, listes, onglets, progression |
-| `LSPropertyField` | champs X/Y/Z, libellés d'axe à glisser (Maj : réglage fin) |
-| `LSModal` | modale ; raccourcis `confirm`, `ask_save`, `error`, `info` |
-| `NotificationCenter`, `LSNotification` | toasts (fondu 160 ms) et historique de la cloche |
-| `tooltip()` | infobulles françaises avec raccourci |
-| `LSSidebar` | navigation sectionnée, actif rouge + liseré, point ambre « à venir », rétractable |
-| `LSTopbar` | barre de titre sans cadre : logo, projet + état, recherche, cloche, contrôles Windows |
+| `LSButton` | `primary` (bleu principal), `secondary`, `ghost`, `danger` (actions destructives), option `small`, `chip` |
+| `LSIconButton` | bouton icône, état coché bleu |
+| `LSCard`, `LSPanel` | cartes et panneaux `#151B26` |
+| `LSSectionHeader`, `Breadcrumb`, `eyebrow`, `heading` | en-têtes de page (point final bleu électrique) |
+| `LSStatsGrid`, `LSIconBox` | statistiques |
+| `LSBadge` | teintes `blue`, `electric`, `neutral` (information) et `green`, `amber`, `red` (états) |
+| `LSInput`, `LSSelect`, `LSTabs`, `LSProgress` | champs, listes, onglets (soulignement électrique), progression (dégradé bleu) |
+| `LSPropertyField` | champs X/Y/Z à glisser |
+| `LSModal`, `NotificationCenter` | modales et notifications |
+| `LSSidebar` | navigation moderne : élément actif sur fond bleu translucide avec liseré électrique ; point ambre « à venir » |
+| `LSTopbar` | barre supérieure compacte : logo, projet et état, recherche, notifications |
 
-Variantes par propriétés dynamiques (`variant`, `size`, `role`, `tint`) ; après changement :
-`components.set_prop()`.
+## Disposition des écrans de travail
 
-## Interactions
+- Barre supérieure compacte, navigation latérale rétractable.
+- Viewport central occupant la majorité de l'espace.
+- Explorateur / hiérarchie à gauche, propriétés et informations à droite.
+- Diagnostics, journal et progression en bas ; tous les panneaux sont redimensionnables.
 
-Transitions courtes (survol, repli de sidebar 170 ms, toasts 160 ms), aucune animation
-permanente. Actions destructives confirmées et annulables. Mode compact disponible.
+Références ergonomiques (sans copie) : Blender, Substance Painter, Unreal Engine, Figma,
+configurateurs automobiles haut de gamme.
 
 ## Captures
 
 `docs/screenshots/` : 1920×1080 (100 %, 125 %) et 2560×1440 (150 %), générées par
-`python scripts/capture_screens.py screens LARGEUR HAUTEUR ECHELLE`.
+`python scripts/capture_screens.py screens LARGEUR HAUTEUR ECHELLE` (le visuel du tableau de
+bord : `python scripts/capture_screens.py hero`).

@@ -33,11 +33,11 @@ from lsfcars.ui.design.components import LSModal, NotificationCenter, tooltip
 from lsfcars.ui.design.sidebar import LSSidebar, NavEntry
 from lsfcars.ui.design.topbar import LSTopbar
 from lsfcars.ui.dialogs.new_project import NewProjectDialog, NewProjectRequest
+from lsfcars.ui.import_studio.page import VehicleImportStudio
 from lsfcars.ui.pages.dashboard import DashboardPage
 from lsfcars.ui.pages.pages import (
     UPCOMING,
     DiagnosticsPage,
-    ImportPage,
     MaterialsPage,
     ProjectsPage,
     SettingsPage,
@@ -78,7 +78,13 @@ def nav_entries() -> list[NavEntry]:
         NavEntry("projects", "Mes projets", "folder", "Accueil"),
         NavEntry("recent", "Projets récents", "history", "Accueil"),
         NavEntry("studio", "Studio 3D", "cuboid", "Création"),
-        NavEntry("import", "Importer un véhicule", "import", "Création"),
+        NavEntry(
+            "import",
+            "Vehicle Import Studio",
+            "import",
+            "Création",
+            tooltip="Importer et inspecter un véhicule FiveM / GTA V",
+        ),
         soon("library"),
         NavEntry("materials", "Matériaux", "palette", "Création"),
         soon("liveries"),
@@ -126,7 +132,7 @@ class MainWindow(QMainWindow):
         self.projects_page = ProjectsPage(projects_dir)
         self.recent_page = ProjectsPage(projects_dir, recent_only=True)
         self.studio = StudioPage(self.controller, self.settings)
-        self.import_page = ImportPage()
+        self.import_page = VehicleImportStudio(self.controller, self.ensure_project)
         self.materials_page = MaterialsPage(self.controller)
         self.settings_page = SettingsPage(self.settings)
         self.diagnostics_page = DiagnosticsPage()
@@ -247,10 +253,12 @@ class MainWindow(QMainWindow):
             page.open_requested.connect(self.open_project)
             page.new_requested.connect(self.new_project)
         self.dashboard.import_requested.connect(self.import_model)
-        self.dashboard.addon_requested.connect(self._addon_info)
+        self.dashboard.addon_requested.connect(lambda: self.navigate("import"))
         self.dashboard.studio_requested.connect(lambda: self.navigate("studio"))
         self.dashboard.projects_requested.connect(lambda: self.navigate("projects"))
-        self.import_page.import_requested.connect(self.import_model)
+        self.import_page.notify.connect(lambda title, msg, level: self.notify(title, msg, level))
+        self.import_page.error.connect(self.error)
+        self.import_page.imported.connect(self._on_resource_imported)
         self.settings_page.settings_changed.connect(self._on_setting)
 
     # --- Navigation ---------------------------------------------------------
@@ -529,13 +537,23 @@ class MainWindow(QMainWindow):
         else:
             self.error("Import impossible", message)
 
-    def _addon_info(self) -> None:
-        LSModal.info(
+    def ensure_project(self) -> bool:
+        """Projet ouvert, ou création proposée (import depuis le Vehicle Import Studio)."""
+        if self.controller.session is not None:
+            return True
+        if not LSModal.confirm(
             self,
-            "Import d'addon FiveM",
-            "L'import d'addons FiveM existants (.yft, .ytd, .meta) est prévu dans une "
-            "prochaine version. Pour l'instant, importe un modèle GLB, glTF, OBJ ou FBX.",
-        )
+            "Aucun projet ouvert",
+            "Un projet est nécessaire pour importer ce véhicule. Créer un nouveau véhicule ?",
+            "Créer",
+        ):
+            return False
+        return self.new_project()
+
+    def _on_resource_imported(self, root_id: str) -> None:
+        self.navigate("studio")
+        self.controller.select([root_id])
+        self.frame_selection()
 
     # --- Édition --------------------------------------------------------------
     def delete_selection(self, confirm: bool = True) -> int:
@@ -657,6 +675,7 @@ class MainWindow(QMainWindow):
         self.settings.set_value("window/geometry", self.saveGeometry())
         self.studio.save_layout()
         self.studio.bottom.log_panel.detach()
+        self.import_page.shutdown()
         QApplication.instance().removeEventFilter(self)
         log.info("Fermeture de l'application")
         event.accept()

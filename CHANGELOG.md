@@ -5,6 +5,59 @@ versionnement [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+## [0.3.0] - 2026-10-11
+
+Import FiveM / GTA V, décomposition 3D et restauration d'une identité propre « Dark Premium ».
+
+### Modifié
+
+- Abandon complet de l'identité rouge/rose inspirée de LeStitcheur Control : nouvelle direction
+  « Dark Premium — Automotive Creation Studio » (palette officielle de 12 couleurs, bleu principal
+  `#2563EB`, bleu électrique `#38BDF8`). Design system centralisé (`ColorTokens`,
+  `TypographyTokens`, `SpacingTokens`, `AnimationTokens`, `AppTheme`, `ComponentStyles`) ;
+  aucune couleur hors des tokens (vérifié par un test), y compris dans le moteur de rendu.
+- Polices système Segoe UI ; polices, emblème et script d'import de LeStitcheur Control retirés ;
+  carte profil retirée ; bannière du tableau de bord redessinée. Fonctions inchangées.
+- La page « Importer un véhicule » devient le **Vehicle Import Studio**.
+- Format de projet `.lsfc` **v3** (migration automatique v1/v2 → v3).
+
+### Ajouté (fonctionnel, testé)
+
+- Paquet `fivem/` (sans Qt) :
+  - archives RPF7 non chiffrées : parcours, archives imbriquées, extraction ; archives
+    chiffrées (AES / NG) détectées et refusées sans déchiffrement ;
+  - ressources RSC7 : en-tête, tailles de blocs, décompression, pointeurs ;
+  - `.ytd` : dictionnaire, décodage DXT1/3/5, BC4/5/7 et formats non compressés, export PNG/DDS ;
+  - `.yft` / `.ydr` : squelette, géométrie, enfants physiques (roues), shaders et textures,
+    découpage par os avec pivots d'origine ;
+  - métadonnées XML (vehicles, handling, carvariations, carcols, content, setup2…), recherche,
+    vérifications croisées, données inconnues conservées ;
+  - analyse de ressource (dossier, ZIP, RPF, fichiers) avec statuts Compatible / Partiel /
+    Dépendance manquante / Erreur / Non pris en charge, détection de FiveM Asset Escrow ;
+  - classification des composants par noms d'os (« Non classée » sinon) ;
+  - adaptateur Blender / Sollumz : détection, sondage des opérateurs réellement présents,
+    tâches en processus séparé avec journal, délai et annulation ;
+  - inventaire des archives d'une installation GTA V (en-têtes seulement).
+- Import natif `.yft` / `.ydr` dans les projets (`YftImporter`), textures des `.ytd` voisins.
+- Vehicle Import Studio : explorateur de fichiers filtrable, hiérarchie (composants, os,
+  ancrages), viewport d'aperçu, modes d'inspection (complet, isolé, éclaté, filaire, matériaux,
+  os, ancrages, statistiques ; collisions marquées « non implémenté »), fiches véhicule et
+  fichier, lecteur de métadonnées, inspecteur de textures, onglet Blender, onglet Formats,
+  diagnostics, journal, progression et annulation ; import dans le projet avec copies et
+  manifeste versionné.
+- Métadonnées d'origine conservées sur les nœuds (`extra`) et avertissements « Compatibilité
+  FiveM » lors des éditions risquées (renommer un os, supprimer, changer la hiérarchie, échelle
+  non uniforme).
+- Addon de démonstration synthétique (`scripts/generate_demo_addon.py`), embarqué dans
+  l'exécutable et vérifié par le test de démarrage.
+- 126 tests automatisés (+36) ; test facultatif sur ressource réelle (`LSFCARS_REAL_RESOURCE`).
+
+### Limites connues
+
+- Collisions `.ybn` non décodées ; seul le niveau de détail haut est importé ; matériaux
+  simplifiés ; aucune écriture de formats GTA V (export FiveM à venir).
+- `.ydr` non validé sur fichier réel ; import via Sollumz non testé (Sollumz non installé).
+
 ## [0.2.0] - 2026-10-11
 
 Studio 3D interactif et identité graphique de la suite LeStitcheur.
@@ -66,6 +119,7 @@ Première version : fondations de l'application.
 - Ateliers Livrées, LSPD / EMS, Génération IA et Export FiveM.
 - Import de véhicules GTA V / FiveM existants, textures et matériaux.
 
-[Non publié]: https://github.com/LeStitcheur/lestitcheurfou-cars/compare/v0.2.0...HEAD
+[Non publié]: https://github.com/LeStitcheur/lestitcheurfou-cars/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/LeStitcheur/lestitcheurfou-cars/releases/tag/v0.3.0
 [0.2.0]: https://github.com/LeStitcheur/lestitcheurfou-cars/releases/tag/v0.2.0
 [0.1.0]: https://github.com/LeStitcheur/lestitcheurfou-cars/releases/tag/v0.1.0

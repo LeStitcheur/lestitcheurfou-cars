@@ -23,7 +23,7 @@ from lsfcars.ui.design import tokens
 
 LOG_LEVEL_COLORS = {
     "DEBUG": tokens.TEXT_MUTED,
-    "INFO": "#c9d2dd",
+    "INFO": tokens.TEXT_3,
     "WARNING": tokens.WARNING,
     "ERROR": tokens.ERROR,
     "CRITICAL": tokens.ERROR,

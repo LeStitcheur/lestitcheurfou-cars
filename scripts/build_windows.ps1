@@ -36,6 +36,10 @@ if (-not $SkipInstall) {
     if ($LASTEXITCODE -ne 0) { throw "Installation des dépendances échouée" }
 }
 
+# Addon de démonstration embarqué (contenu synthétique, régénéré à chaque build)
+& $Python scripts\generate_demo_addon.py
+if ($LASTEXITCODE -ne 0) { throw "Génération de l'addon de démonstration échouée" }
+
 if (Test-Path "build") { Remove-Item -Recurse -Force "build" }
 & $Python -m PyInstaller --noconfirm --clean packaging\LeStitcheurFouCars.spec
 if ($LASTEXITCODE -ne 0) { throw "PyInstaller a échoué" }
@@ -55,7 +59,7 @@ if (-not $SkipSmokeTest) {
     Remove-Item Env:\LSFCARS_HOME
     $Log = Join-Path $SmokeHome "logs\lsfcars.log"
     if (Test-Path $Log) {
-        Get-Content $Log -Encoding UTF8 | Select-String "Test de démarrage|OpenGL :|ERROR|CRITICAL"
+        Get-Content $Log -Encoding UTF8 | Select-String "Test de démarrage|OpenGL :|import FiveM|ERROR|CRITICAL"
     }
     if ($Process.ExitCode -ne 0) { throw "Test de démarrage échoué (code $($Process.ExitCode))" }
     Write-Host "Test de démarrage réussi."

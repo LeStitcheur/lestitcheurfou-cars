@@ -1,4 +1,4 @@
-"""Composants réutilisables de la suite LeStitcheur."""
+"""Composants réutilisables du design system Dark Premium."""
 
 from __future__ import annotations
 
@@ -80,10 +80,10 @@ def eyebrow(text: str, color: str | None = None) -> QLabel:
 
 
 def heading(text: str, size: int = 29, dot: bool = True, accent_words: str | None = None) -> QLabel:
-    """Titre fort ; ``dot`` ajoute le point rouge final, ``accent_words`` colore une partie."""
+    """Titre fort ; ``dot`` ajoute un point final bleu électrique, ``accent_words`` colore une partie."""
     html = text
     if accent_words and accent_words in text:
-        html = text.replace(accent_words, f"<span style='color:#ff677b'>{accent_words}</span>")
+        html = text.replace(accent_words, f"<span style='color:{t.ACCENT_2}'>{accent_words}</span>")
     if dot:
         html = html.rstrip(".") + f"<span style='color:{t.ACCENT_2}'>.</span>"
     widget = label(html, "h1")
@@ -102,10 +102,10 @@ def separator() -> QFrame:
 # --- Boutons -----------------------------------------------------------------
 
 _ICON_COLORS = {
-    "primary": "#ffffff",
-    "secondary": "#c9d2dd",
-    "ghost": "#b9c3d0",
-    "danger": "#ff9daf",
+    "primary": t.TEXT,
+    "secondary": t.TEXT_3,
+    "ghost": t.TEXT_3,
+    "danger": t.ERROR,
 }
 
 
@@ -124,8 +124,8 @@ class LSButton(QPushButton):
             self.setProperty("size", "small")
         self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         if icon:
-            color = _ICON_COLORS.get(variant, "#c9d2dd")
-            self.setIcon(icons.icon(icon, color, "#ffffff", size=16))
+            color = _ICON_COLORS.get(variant, t.TEXT_3)
+            self.setIcon(icons.icon(icon, color, t.TEXT, size=16))
             self.setIconSize(icons.icon_size(15 if small else 16))
 
 
@@ -141,7 +141,7 @@ class LSIconButton(QToolButton):
     ) -> None:
         super().__init__(parent)
         self.setObjectName("LSIconButton")
-        active = t.ACCENT_TEXT if checkable else "#ffffff"
+        active = t.ACCENT_TEXT if checkable else t.TEXT
         self.setIcon(icons.icon(icon, t.TEXT_3, active, size=size))
         self.setIconSize(icons.icon_size(size))
         self.setCheckable(checkable)
@@ -168,7 +168,7 @@ class LSBadge(QLabel):
 class LSIconBox(QLabel):
     """Petite icône dans un conteneur coloré arrondi (cartes statistiques, en-têtes)."""
 
-    def __init__(self, icon: str, tint: str = "red", size: int = 34, parent: QWidget | None = None) -> None:
+    def __init__(self, icon: str, tint: str = "blue", size: int = 34, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         background, foreground, _ = t.tint(tint)
         self.setFixedSize(size, size)
@@ -181,7 +181,7 @@ class LSIconBox(QLabel):
 
 
 class LSCard(QFrame):
-    """Carte anthracite à coins arrondis, avec en-tête optionnel."""
+    """Carte (couleur « panneau » des tokens) à coins arrondis, avec en-tête optionnel."""
 
     clicked = Signal()
 
@@ -209,7 +209,7 @@ class LSCard(QFrame):
             header.setSpacing(9)
             if icon:
                 header_icon = QLabel()
-                header_icon.setPixmap(icons.pixmap(icon, "#99aabd", 16))
+                header_icon.setPixmap(icons.pixmap(icon, t.TEXT_2, 16))
                 header.addWidget(header_icon)
             header.addWidget(label(title, "h3"))
             header.addStretch(1)
@@ -226,7 +226,7 @@ class LSCard(QFrame):
 
 
 class LSSectionHeader(QWidget):
-    """Petit label + titre fort à point rouge + sous-titre + actions alignées à droite."""
+    """Petit label + titre fort + sous-titre + actions alignées à droite."""
 
     def __init__(
         self,
@@ -273,7 +273,7 @@ class Breadcrumb(QWidget):
             self._layout.addWidget(label(part, "breadcrumb-current" if last else "breadcrumb"))
             if not last:
                 chevron = QLabel()
-                chevron.setPixmap(icons.pixmap("chevron-right", "#4c5866", 12))
+                chevron.setPixmap(icons.pixmap("chevron-right", t.TEXT_FAINT, 12))
                 self._layout.addWidget(chevron)
         self._layout.addStretch(1)
 
@@ -304,18 +304,18 @@ class LSStatCell(QFrame):
         texts = QVBoxLayout()
         texts.setSpacing(4)
         self.title_label = label(spec.title)
-        self.title_label.setStyleSheet("color: #93a0b0; font-size: 11px;")
+        self.title_label.setStyleSheet(f"color: {t.TEXT_2}; font-size: 11px;")
         value_row = QHBoxLayout()
         value_row.setSpacing(5)
         self.value_label = label(spec.value, "value")
         self.value_label.setFont(fonts.font(27, 700, -0.5))
         self.unit_label = label(spec.unit)
-        self.unit_label.setStyleSheet("color: #75879a; font-size: 11px;")
+        self.unit_label.setStyleSheet(f"color: {t.TEXT_MUTED}; font-size: 11px;")
         value_row.addWidget(self.value_label)
         value_row.addWidget(self.unit_label, 0, Qt.AlignmentFlag.AlignBottom)
         value_row.addStretch(1)
         self.detail_label = label(spec.detail)
-        self.detail_label.setStyleSheet("color: #748499; font-size: 10px;")
+        self.detail_label.setStyleSheet(f"color: {t.TEXT_MUTED}; font-size: 10px;")
         texts.addWidget(self.title_label)
         texts.addLayout(value_row)
         texts.addWidget(self.detail_label)
@@ -542,7 +542,7 @@ class LSModal(QDialog):
         title: str,
         subtitle: str = "",
         icon: str = "info",
-        tint: str = "red",
+        tint: str = "blue",
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
@@ -680,7 +680,9 @@ class LSNotification(QFrame):
 
     closed = Signal()
 
-    def __init__(self, notification: Notification, parent: QWidget, duration_ms: int = 4200) -> None:
+    def __init__(
+        self, notification: Notification, parent: QWidget, duration_ms: int = t.AnimationTokens.TOAST_MS
+    ) -> None:
         super().__init__(parent)
         self.setObjectName("LSToast")
         self.setProperty("level", notification.level)
@@ -693,7 +695,7 @@ class LSNotification(QFrame):
         texts = QVBoxLayout()
         texts.setSpacing(3)
         title = label(notification.title, wrap=True)
-        title.setStyleSheet("font-weight: 600; color: #eef1f6;")
+        title.setStyleSheet(f"font-weight: 600; color: {t.TEXT};")
         texts.addWidget(title)
         if notification.message:
             texts.addWidget(label(notification.message, "muted", wrap=True))
@@ -706,7 +708,7 @@ class LSNotification(QFrame):
         self._effect.setOpacity(0.0)
         self.setGraphicsEffect(self._effect)
         self._fade = QPropertyAnimation(self._effect, b"opacity", self)
-        self._fade.setDuration(160)
+        self._fade.setDuration(t.AnimationTokens.NORMAL_MS)
         self._fade.setEasingCurve(QEasingCurve.Type.OutCubic)
         self._closing = False
         self.adjustSize()
@@ -749,7 +751,11 @@ class NotificationCenter(QObject):
         host.installEventFilter(self)
 
     def notify(
-        self, title: str, message: str = "", level: str = "info", duration_ms: int = 4200
+        self,
+        title: str,
+        message: str = "",
+        level: str = "info",
+        duration_ms: int = t.AnimationTokens.TOAST_MS,
     ) -> Notification:
         notification = Notification(title, message, level)
         self.history.insert(0, notification)

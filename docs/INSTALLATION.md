@@ -17,6 +17,9 @@ L'exécutable n'est pas signé numériquement : Windows SmartScreen peut affiche
 - Windows 10 ou 11, 64 bits.
 - Carte graphique compatible OpenGL 3.3 (recommandé). À défaut, un rendu logiciel intégré
   est utilisé avec l'option `--software-gl` (plus lent).
+- Facultatif : **Blender** (import FBX, détection de Sollumz) ; **Sollumz** dans Blender pour
+  l'import de secours via Sollumz. Ni l'un ni l'autre n'est nécessaire pour lire les `.yft`,
+  `.ytd`, `.meta` et les archives RPF non chiffrées (lecteurs intégrés).
 
 ### Emplacements des données
 
@@ -39,7 +42,7 @@ LeStitcheurFouCars.exe [projet.lsfc] [--software-gl] [--debug] [--version]
 | `projet.lsfc` | Ouvre ce projet au démarrage |
 | `--software-gl` | Rendu OpenGL logiciel (pilote graphique absent ou défaillant) |
 | `--debug` | Journal détaillé |
-| `--smoke-test MS` | Test de démarrage automatique (utilisé par la CI) |
+| `--smoke-test MS` | Test de démarrage automatique (rendu 3D + lecture de l'addon de démonstration ; codes 3 = OpenGL, 4 = lecteurs FiveM) |
 
 ## Développeur : depuis les sources
 

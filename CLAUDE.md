@@ -31,15 +31,31 @@ scripts\build_windows.ps1   # build dist\LeStitcheurFouCars.exe
 
 ## Identité graphique
 
-Référence : LeStitcheur Control (`../lestitcheur`, `src/design.css`). Ne pas réintroduire le
-thème bleu de la v0.1. Toute couleur passe par `ui/design/tokens.py` ; voir `docs/DESIGN_SYSTEM.md`.
+Direction **Dark Premium — Automotive Creation Studio** (v0.3). L'identité rouge/rose de
+LeStitcheur Control est définitivement abandonnée : ne pas la réintroduire. Palette exclusive de
+12 couleurs dans `ui/design/tokens.py` (`ColorTokens`) ; les nuances sont dérivées par `mix()` /
+`rgba()`. Aucune couleur littérale ailleurs dans `ui/` (test `test_design_system.py`).
+Voir `docs/DESIGN_SYSTEM.md`.
 Ne pas utiliser `NoButtons` sur les QDoubleSpinBox (valeur invisible avec la feuille de style).
 
-## Architecture v0.2 (src/lsfcars)
+## FiveM / GTA V (v0.3)
+
+- `fivem/` : lecteurs purs (rpf, rsc, ytd, yft, meta), `resource.py` (analyse et statuts),
+  `structure.py` (classification), `sollumz.py`, `gta_install.py`, `project_import.py`,
+  `synthetic.py` (fichiers de test et addon de démonstration, **pas** un exporteur).
+- Ne jamais simuler une conversion ni déclarer « Compatible » sans décodage effectif.
+- Ne jamais déchiffrer : archives AES/NG et Asset Escrow sont refusées avec explication.
+- Aucun fichier GTA V tiers dans le dépôt ni dans les tests versionnés ; tests réels
+  facultatifs via `LSFCARS_REAL_RESOURCE`.
+- Détails et tableau de compatibilité : `docs/FIVEM_IMPORT.md`.
+
+## Architecture v0.2-v0.3 (src/lsfcars)
 
 - `scene/` : graphe (`graph.py`), transformations, matériaux, historique (`commands.py`),
   sélection, caméra, gizmos (math pure), picking.
-- `importers/` : trimesh (GLB/glTF/OBJ/STL/PLY) et FBX via Blender ; formats GTA « prévus ».
+- `importers/` : trimesh (GLB/glTF/OBJ/STL/PLY), FBX via Blender, `.yft`/`.ydr` natifs.
+- `ui/import_studio/` : Vehicle Import Studio (page, panneaux, tâches annulables).
+- `scene/inspection.py` : vue éclatée et statistiques (affichage seulement, non destructif).
 - `render/renderer.py` : rendu GL indépendant de l'UI ; `ui/viewport.py` : interaction seule.
 - `ui/design/` : design system ; `ui/pages/` ; `ui/studio/` (contrôleur, panneaux, page).
 - Toute modification de scène passe par `ProjectSession` → `UndoStack`.

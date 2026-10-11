@@ -21,19 +21,20 @@ from PySide6.QtWidgets import (
 from lsfcars.project import recent, store
 from lsfcars.project.store import ProjectSummary
 from lsfcars.ui.design import icons
+from lsfcars.ui.design import tokens as t
 from lsfcars.ui.design.components import Breadcrumb, LSCard, LSSectionHeader, label
 from lsfcars.ui.design.qss import density
 
 
 class Page(QScrollArea):
-    """Page défilante au fond dégradé de la suite LeStitcheur."""
+    """Page défilante du studio (fond principal Dark Premium)."""
 
     def __init__(
         self,
         crumbs: Sequence[str],
         title: str,
         subtitle: str = "",
-        eyebrow: str = "Workspace / LeStitcheur",
+        eyebrow: str = "LeStitcheurFou Cars / Studio",
     ) -> None:
         super().__init__()
         self.setWidgetResizable(True)
@@ -94,7 +95,7 @@ class ProjectCard(LSCard):
         thumb = QLabel()
         thumb.setFixedSize(226, 127)
         thumb.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        thumb.setStyleSheet("background: #0d1116; border: 1px solid #20252c; border-radius: 9px;")
+        thumb.setObjectName("LSThumb")
         pixmap = QPixmap()
         if summary.thumbnail and pixmap.loadFromData(summary.thumbnail):
             thumb.setPixmap(
@@ -106,7 +107,7 @@ class ProjectCard(LSCard):
                 )
             )
         else:
-            thumb.setPixmap(icons.pixmap("car", "#3a4552", 40))
+            thumb.setPixmap(icons.pixmap("car", t.BORDER_STRONG, 40))
         self.body.addWidget(thumb)
         name = label(summary.name, "h3", wrap=True)
         self.body.addWidget(name)

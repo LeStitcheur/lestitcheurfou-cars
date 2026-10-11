@@ -222,6 +222,7 @@ class ProjectSession:
                 material_id=materials[node.material_key].id if node.material_key in materials else None,
                 parent_id=ids.get(node.parent_key, root_id),
                 id=ids[node.key],
+                extra=dict(node.extra),
             ).snapshot()
             snapshots.append(snapshot)
         return snapshots, list(materials.values())

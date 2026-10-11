@@ -1,4 +1,4 @@
-"""Tableau de bord « Bienvenue dans ton garage » (style LeStitcheur Control)."""
+"""Tableau de bord « Bienvenue dans ton garage »."""
 
 from __future__ import annotations
 
@@ -12,6 +12,7 @@ from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
 from lsfcars.core.paths import resources_dir
 from lsfcars.ui.design import fonts
+from lsfcars.ui.design import tokens as t
 from lsfcars.ui.design.components import (
     LSButton,
     LSEmptyState,
@@ -53,9 +54,9 @@ class HeroVisual(QWidget):
         painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
         rect = QRectF(self.rect())
         clip = QPainterPath()
-        clip.addRoundedRect(rect.adjusted(-20, 1, -1, -1), 17, 17)
+        clip.addRoundedRect(rect.adjusted(-20, 1, -1, -1), 13, 13)
         painter.setClipPath(clip)
-        painter.fillRect(rect, QColor("#120f13"))
+        painter.fillRect(rect, QColor(t.BG_RAISED))
         if not self.pixmap.isNull():
             scaled = self.pixmap.scaled(
                 self.size(),
@@ -65,22 +66,27 @@ class HeroVisual(QWidget):
             painter.drawPixmap(
                 (self.width() - scaled.width()) // 2, (self.height() - scaled.height()) // 2, scaled
             )
+        edge = QColor(t.PANEL)
         left = QLinearGradient(0, 0, self.width() * 0.35, 0)
-        left.setColorAt(0, QColor(19, 21, 25, 255))
-        left.setColorAt(1, QColor(19, 21, 25, 0))
+        left.setColorAt(0, edge)
+        edge.setAlpha(0)
+        left.setColorAt(1, edge)
         painter.fillRect(rect, left)
         bottom = QLinearGradient(0, self.height(), 0, self.height() * 0.45)
-        bottom.setColorAt(0, QColor(8, 10, 14, 235))
-        bottom.setColorAt(1, QColor(8, 10, 14, 0))
+        shade = QColor(t.BG)
+        shade.setAlpha(235)
+        bottom.setColorAt(0, shade)
+        shade.setAlpha(0)
+        bottom.setColorAt(1, shade)
         painter.fillRect(rect, bottom)
-        painter.setPen(QColor("#f4f6f9"))
-        painter.setFont(fonts.brand_font(28, 700, 1.0))
+        painter.setPen(QColor(t.TEXT))
+        painter.setFont(fonts.brand_font(26, 600, 0.5))
         painter.drawText(
             QRectF(28, self.height() - 62, self.width() - 56, 36),
             Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
-            "LESTITCHEURFOU CARS",
+            "LeStitcheurFou Cars",
         )
-        painter.setPen(QColor("#bb9aa4"))
+        painter.setPen(QColor(t.ACCENT_2))
         painter.setFont(fonts.font(9, 600, 1.4, caps=True))
         painter.drawText(
             QRectF(28, self.height() - 34, self.width() - 56, 18),
@@ -105,7 +111,7 @@ class HeroCard(QFrame):
         text = QVBoxLayout(copy)
         text.setContentsMargins(32, 30, 28, 30)
         text.setSpacing(14)
-        chip = QLabel("●  Ton garage. Tes véhicules. Tes règles.")
+        chip = QLabel("Automotive creation studio")
         chip.setObjectName("LSHeroChip")
         chip.setFont(fonts.font(9, 600, 1.3, caps=True))
         text.addWidget(chip)
@@ -122,7 +128,7 @@ class HeroCard(QFrame):
             "tes serveurs FiveM, dans le style Lore Friendly.",
             wrap=True,
         )
-        body.setStyleSheet("color: #9a9fac; font-size: 12px;")
+        body.setProperty("role", "subtitle")
         text.addWidget(body)
         text.addStretch(1)
         actions = QHBoxLayout()
@@ -186,12 +192,12 @@ class DashboardPage(Page):
 
         self.stats = LSStatsGrid(
             [
-                StatSpec("Projets créés", "folder", "red"),
+                StatSpec("Projets créés", "folder", "blue"),
                 StatSpec("Véhicules importés", "car", "blue"),
                 StatSpec(
                     "Livrées disponibles",
                     "paint-bucket",
-                    "violet",
+                    "electric",
                     "—",
                     "",
                     "Atelier de livrées à venir",

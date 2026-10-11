@@ -45,6 +45,7 @@ class ImportedNode:
     transform: Transform
     mesh_key: str | None = None
     material_key: str | None = None
+    extra: dict = field(default_factory=dict)  # métadonnées d'origine (os GTA V, catégorie…)
 
 
 @dataclass

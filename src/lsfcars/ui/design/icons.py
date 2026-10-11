@@ -67,9 +67,18 @@ def icon(
 
 
 @lru_cache(maxsize=16)
-def emblem(size: int) -> QPixmap:
-    """Emblème LSF de la suite LeStitcheur."""
-    return _render(QSvgRenderer(str(resources_dir() / "brand" / "emblem.svg")), size)
+def logo(size: int) -> QPixmap:
+    """Logo de l'application (icône LeStitcheurFou Cars)."""
+    source = QPixmap(str(resources_dir() / "icon.png"))
+    if source.isNull():
+        return QPixmap()
+    ratio = _device_ratio()
+    side = max(int(round(size * ratio)), 1)
+    result = source.scaled(
+        side, side, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation
+    )
+    result.setDevicePixelRatio(ratio)
+    return result
 
 
 def icon_size(px: int) -> QSize:

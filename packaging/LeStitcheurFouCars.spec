@@ -47,6 +47,7 @@ version_info = VSVersionInfo(
 datas = [
     (str(ROOT / "samples" / "vehicule_test.glb"), "samples"),
     (str(ROOT / "samples" / "vehicule_test.obj"), "samples"),
+    (str(ROOT / "samples" / "fivem"), "samples/fivem"),
     (str(ROOT / "src" / "lsfcars" / "resources"), "lsfcars/resources"),
 ]
 datas += collect_data_files("trimesh")

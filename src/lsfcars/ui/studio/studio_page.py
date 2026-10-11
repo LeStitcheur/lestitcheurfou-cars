@@ -25,7 +25,6 @@ class StudioPage(QWidget):
         for panel in (self.explorer, self.properties, self.bottom):
             panel.setObjectName("LSStudioPanel")
             panel.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
-            panel.setStyleSheet("QWidget#LSStudioPanel { background: #11151a; }")
         self.explorer.setMinimumWidth(220)
         self.properties.setMinimumWidth(360)
 

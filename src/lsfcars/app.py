@@ -19,6 +19,7 @@ if TYPE_CHECKING:
     from lsfcars.ui.main_window import MainWindow
 
 EXIT_SMOKE_GL_FAILED = 3
+EXIT_SMOKE_FIVEM_FAILED = 4
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
@@ -90,7 +91,8 @@ def main(argv: Sequence[str] | None = None) -> int:
 def _run_smoke_test(app: QApplication, window: MainWindow, delay_ms: int) -> int:
     """Vérification de démarrage (CI, exécutable) : rendu du véhicule d'exemple puis sortie.
 
-    Code de retour 0 si le rendu OpenGL a fonctionné, ``EXIT_SMOKE_GL_FAILED`` sinon.
+    Code de retour 0 si le rendu OpenGL a fonctionné, ``EXIT_SMOKE_GL_FAILED`` sinon,
+    ``EXIT_SMOKE_FIVEM_FAILED`` si l'addon de démonstration n'a pas pu être analysé et décodé.
     """
     import tempfile
 
@@ -117,7 +119,8 @@ def _run_smoke_test(app: QApplication, window: MainWindow, delay_ms: int) -> int
             len(session.scene),
         )
         log.info("\n%s", diagnostics.format_report())
-        result["code"] = 0 if ok else EXIT_SMOKE_GL_FAILED
+        fivem_ok = _smoke_fivem(log)
+        result["code"] = (0 if fivem_ok else EXIT_SMOKE_FIVEM_FAILED) if ok else EXIT_SMOKE_GL_FAILED
         session.stack.mark_clean()
         window.close()
         app.quit()
@@ -125,6 +128,33 @@ def _run_smoke_test(app: QApplication, window: MainWindow, delay_ms: int) -> int
     QTimer.singleShot(max(delay_ms, 100), finish)
     app.exec()
     return result["code"]
+
+
+def _smoke_fivem(log) -> bool:  # type: ignore[no-untyped-def]
+    """Analyse et décode l'addon de démonstration embarqué (lecteurs RSC7, YTD, YFT, META)."""
+    from lsfcars.fivem.resource import Status, analyze, stage_model
+    from lsfcars.importers.yft_importer import YftImporter
+
+    folder = samples_dir() / "fivem" / "lsfdemo"
+    if not folder.is_dir():
+        log.error("Addon de démonstration absent : %s", folder)
+        return False
+    analysis = analyze(folder)
+    try:
+        model = analysis.model("lsfdemo")
+        if analysis.overall is not Status.COMPATIBLE or model is None:
+            log.error("Addon de démonstration : statut %s", analysis.overall.label)
+            return False
+        result = YftImporter().load(stage_model(analysis, model, analysis.temp_dir() / "smoke"))
+    finally:
+        analysis.close()
+    log.info(
+        "Test de démarrage : import FiveM OK (%d fichiers, %d triangles, %d textures)",
+        len(analysis.files),
+        result.triangle_count,
+        len(analysis.textures),
+    )
+    return result.triangle_count > 0
 
 
 if __name__ == "__main__":

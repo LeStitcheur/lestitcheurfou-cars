@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from PySide6.QtCore import Qt, QUrl, Signal
-from PySide6.QtGui import QDesktopServices, QDragEnterEvent, QDropEvent, QFont, QGuiApplication
+from PySide6.QtGui import QDesktopServices, QFont, QGuiApplication
 from PySide6.QtWidgets import (
     QCheckBox,
     QFileDialog,
@@ -17,13 +17,10 @@ from PySide6.QtWidgets import (
     QListWidgetItem,
     QPlainTextEdit,
     QSpinBox,
-    QVBoxLayout,
-    QWidget,
 )
 
 from lsfcars.core import diagnostics
 from lsfcars.core.paths import logs_dir
-from lsfcars.importers import PLANNED_FORMATS
 from lsfcars.importers.registry import IMPORTERS
 from lsfcars.project import recent
 from lsfcars.ui.design.components import (
@@ -31,12 +28,10 @@ from lsfcars.ui.design.components import (
     LSButton,
     LSCard,
     LSEmptyState,
-    LSIconBox,
     LSInput,
     label,
-    separator,
 )
-from lsfcars.ui.pages.base import Page, ProjectGrid, known_projects, section_title
+from lsfcars.ui.pages.base import Page, ProjectGrid, known_projects
 from lsfcars.ui.settings import AppSettings
 from lsfcars.ui.studio.controller import StudioController
 from lsfcars.ui.studio.panels import MaterialEditor
@@ -107,93 +102,6 @@ class ProjectsPage(Page):
         )
         self.grid.set_projects(known_projects(folder), lambda p: self.open_requested.emit(Path(p)), empty)
         self.location.setText(f"Dossier : {folder}")
-
-
-class DropCard(LSCard):
-    file_dropped = Signal(str)
-
-    def __init__(self) -> None:
-        super().__init__(padding=26)
-        self.setAcceptDrops(True)
-        row = QHBoxLayout()
-        row.addWidget(LSIconBox("upload", "red", 48))
-        texts = QVBoxLayout()
-        texts.addWidget(label("Glisse un fichier 3D ici", "h3"))
-        texts.addWidget(
-            label(
-                "ou utilise « Choisir un fichier ». Le fichier est vérifié puis "
-                "copié dans le projet : l'original n'est jamais modifié.",
-                "subtitle",
-                wrap=True,
-            )
-        )
-        row.addLayout(texts, 1)
-        self.choose = LSButton("Choisir un fichier", "primary", "folder-open")
-        row.addWidget(self.choose)
-        self.body.addLayout(row)
-
-    def dragEnterEvent(self, event: QDragEnterEvent) -> None:  # noqa: N802
-        if event.mimeData().hasUrls():
-            event.acceptProposedAction()
-
-    def dropEvent(self, event: QDropEvent) -> None:  # noqa: N802
-        urls = event.mimeData().urls()
-        if urls and urls[0].isLocalFile():
-            self.file_dropped.emit(urls[0].toLocalFile())
-
-
-class ImportPage(Page):
-    import_requested = Signal(object)  # chemin ou None (boîte de dialogue)
-
-    def __init__(self) -> None:
-        super().__init__(
-            ["Création", "Importer un véhicule"],
-            "Importer un véhicule",
-            "GLB, glTF, OBJ, STL, PLY et FBX. Les formats GTA V / FiveM arrivent.",
-        )
-        self.drop = DropCard()
-        self.drop.choose.clicked.connect(lambda: self.import_requested.emit(None))
-        self.drop.file_dropped.connect(self.import_requested.emit)
-        self.body.addWidget(self.drop)
-        self.body.addWidget(section_title("Formats"))
-        self.formats_card = LSCard(padding=18)
-        self.body.addWidget(self.formats_card)
-        self.status_badges: dict[str, LSBadge] = {}
-        self.finish()
-        self.refresh()
-
-    def refresh(self) -> None:
-        layout = self.formats_card.body
-        while layout.count():
-            item = layout.takeAt(0)
-            if item.widget():
-                item.widget().deleteLater()
-        rows: list[tuple[str, str, str, str]] = []
-        for importer in IMPORTERS:
-            ok, reason = importer.available()
-            detail = "Hiérarchie, matériaux, textures" if importer.name == "trimesh" else reason
-            for ext, name in importer.extensions.items():
-                rows.append((ext, name, "Disponible" if ok else "Indisponible", detail))
-        for ext, name in PLANNED_FORMATS.items():
-            rows.append((ext, name, "Prévu", "Lecture non disponible dans cette version"))
-        for index, (ext, name, status, detail) in enumerate(rows):
-            line = QHBoxLayout()
-            ext_label = label(ext.upper().lstrip("."), "h3")
-            ext_label.setFixedWidth(60)
-            line.addWidget(ext_label)
-            texts = QVBoxLayout()
-            texts.setSpacing(1)
-            texts.addWidget(label(name))
-            texts.addWidget(label(detail, "faint", wrap=True))
-            line.addLayout(texts, 1)
-            badge = LSBadge(status, {"Disponible": "green", "Indisponible": "red"}.get(status, "amber"))
-            self.status_badges[ext] = badge
-            line.addWidget(badge)
-            holder = QWidget()
-            holder.setLayout(line)
-            layout.addWidget(holder)
-            if index < len(rows) - 1:
-                layout.addWidget(separator())
 
 
 class MaterialsPage(Page):

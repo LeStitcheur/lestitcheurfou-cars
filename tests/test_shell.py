@@ -7,59 +7,10 @@ from PySide6.QtCore import Qt
 
 from lsfcars.project.model import VehicleRole, VehicleType
 from lsfcars.ui.design import tokens
-from lsfcars.ui.design.components import LSModal
 from lsfcars.ui.design.qss import stylesheet
 from lsfcars.ui.dialogs.new_project import NewProjectRequest
 from lsfcars.ui.main_window import MainWindow, nav_entries
 from lsfcars.ui.pages.pages import UPCOMING
-
-
-class Dialogs:
-    """Remplace les fenêtres modales : réponses programmées, appels enregistrés."""
-
-    def __init__(self) -> None:
-        self.calls: list[tuple[str, str]] = []
-        self.confirm_answer = True
-        self.save_answer = "discard"
-
-    def confirm(self, parent, title, message, *args, **kwargs):  # noqa: ANN001
-        self.calls.append(("confirm", title))
-        return self.confirm_answer
-
-    def ask_save(self, parent, name):  # noqa: ANN001
-        self.calls.append(("ask_save", name))
-        return self.save_answer
-
-    def error(self, parent, title, message):  # noqa: ANN001
-        self.calls.append(("error", title))
-
-    def info(self, parent, title, message):  # noqa: ANN001
-        self.calls.append(("info", title))
-
-    def kinds(self) -> list[str]:
-        return [k for k, _ in self.calls]
-
-
-@pytest.fixture
-def dialogs(monkeypatch):
-    fake = Dialogs()
-    for name in ("confirm", "ask_save", "error", "info"):
-        monkeypatch.setattr(LSModal, name, staticmethod(getattr(fake, name)))
-    return fake
-
-
-@pytest.fixture
-def window(qtbot, dialogs, projects_dir):
-    win = MainWindow()
-    win.settings.projects_dir = projects_dir
-    qtbot.addWidget(win)
-    win.resize(1600, 960)
-    win.show()
-    qtbot.waitExposed(win)
-    yield win
-    if win.controller.session is not None:
-        win.controller.session.stack.mark_clean()
-        win.controller.session._meta_dirty = False
 
 
 def new(win: MainWindow, folder, name: str = "Police Buffalo") -> None:  # noqa: ANN001
@@ -72,10 +23,28 @@ def import_sample(win: MainWindow, qtbot, path) -> None:  # noqa: ANN001
     assert blocker.args[0], blocker.args[1]
 
 
-def test_brand_identity_tokens():
-    assert tokens.ACCENT == "#ff4157" and tokens.SIDEBAR == "#0d1014"
+def test_dark_premium_tokens():
+    palette = tokens.ColorTokens
+    assert palette.PALETTE == (
+        "#0b0e14",
+        "#111722",
+        "#151b26",
+        "#202a3b",
+        "#2a3445",
+        "#2563eb",
+        "#38bdf8",
+        "#f3f6fc",
+        "#94a3b8",
+        "#22c55e",
+        "#f59e0b",
+        "#ef4444",
+    )
+    assert tokens.ACCENT == palette.PRIMARY and tokens.SIDEBAR == palette.BG_SECONDARY
     css = stylesheet()
-    assert tokens.ACCENT in css and "LSNavItem" in css and "LSHero" in css
+    assert palette.PRIMARY in css and palette.ELECTRIC in css and "LSNavItem" in css
+    # L'ancienne identité rouge / rose a disparu de la feuille de style
+    for legacy in ("#ff4157", "#ff5268", "#ff7384", "#35151f", "255,65,87", "255, 65, 87"):
+        assert legacy not in css
 
 
 def test_starts_on_dashboard_frameless(window):
@@ -210,6 +179,8 @@ def test_search_and_notifications(window, qtbot, projects_dir, sample_glb):
 
 
 def test_import_page_lists_formats(window):
-    badges = window.import_page.status_badges
+    badges = window.import_page.formats.status_badges
     assert badges[".glb"].text() == "Disponible"
-    assert badges[".yft"].text() == "Prévu"
+    assert badges[".yft"].text() == "Disponible"
+    assert badges[".ybn"].text() == "Partiel"
+    assert badges[".rpf chiffrée"].text() == "Refusé"

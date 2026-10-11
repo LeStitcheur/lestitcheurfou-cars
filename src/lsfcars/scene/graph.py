@@ -39,6 +39,8 @@ class SceneNode:
     material_id: str | None = None
     parent_id: str | None = None
     id: str = field(default_factory=new_node_id)
+    # Métadonnées d'origine conservées pour la réexportation (os, étiquette, pivot, catégorie…)
+    extra: dict = field(default_factory=dict)
 
     def snapshot(self) -> dict:
         return {
@@ -52,6 +54,7 @@ class SceneNode:
             "mesh_key": self.mesh_key,
             "material_id": self.material_id,
             "parent_id": self.parent_id,
+            "extra": dict(self.extra),
         }
 
     @classmethod
@@ -67,6 +70,7 @@ class SceneNode:
             material_id=data.get("material_id"),
             parent_id=data.get("parent_id"),
             id=data.get("id") or new_node_id(),
+            extra=dict(data.get("extra") or {}),
         )
 
 

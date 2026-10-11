@@ -1,4 +1,4 @@
-"""Persistance des projets dans un fichier SQLite ``.lsfc`` (format version 2).
+"""Persistance des projets dans un fichier SQLite ``.lsfc`` (format version 3).
 
 Structure sur disque ::
 
@@ -6,6 +6,10 @@ Structure sur disque ::
         MonProjet.lsfc        <- base SQLite (métadonnées, scène, matériaux, provenance)
         assets/               <- copies des modèles importés (les originaux ne sont jamais modifiés)
         assets/textures/      <- textures extraites ou choisies
+        assets/fivem/<nom>/   <- copies des fichiers d'une ressource FiveM importée
+
+Format 3 : ajoute la table ``resources`` (provenance et manifeste versionné des ressources
+FiveM) et la colonne ``nodes.extra`` (métadonnées d'origine : os, étiquette, pivot…).
 """
 
 from __future__ import annotations
@@ -24,6 +28,7 @@ from lsfcars import APP_ID, __version__
 from lsfcars.core.logging_setup import get_logger
 from lsfcars.project.model import (
     Asset,
+    ImportedResource,
     Project,
     VehicleRole,
     VehicleType,
@@ -38,7 +43,7 @@ log = get_logger(__name__)
 
 PROJECT_EXTENSION = ".lsfc"
 FORMAT_ID = APP_ID
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 _SCHEMA = """
 CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
@@ -54,10 +59,16 @@ CREATE TABLE materials (
 CREATE TABLE nodes (
     id TEXT PRIMARY KEY, parent_id TEXT, position INTEGER NOT NULL, name TEXT NOT NULL,
     kind TEXT NOT NULL, transform TEXT NOT NULL, visible INTEGER NOT NULL,
-    locked INTEGER NOT NULL, asset_id TEXT, mesh_key TEXT, material_id TEXT
+    locked INTEGER NOT NULL, asset_id TEXT, mesh_key TEXT, material_id TEXT, extra TEXT
 );
 CREATE TABLE thumbnail (id INTEGER PRIMARY KEY CHECK (id = 1), png BLOB NOT NULL);
+CREATE TABLE resources (
+    id TEXT PRIMARY KEY, name TEXT NOT NULL, source_path TEXT, source_kind TEXT, status TEXT,
+    imported_at TEXT, manifest TEXT NOT NULL
+);
 """
+
+_V2_TABLES = ("assets", "materials", "nodes", "thumbnail")
 
 
 class ProjectError(Exception):
@@ -171,8 +182,13 @@ def save_project(project: Project, path: str | Path | None = None) -> Path:
             n.asset_id,
             n.mesh_key,
             n.material_id,
+            json.dumps(n.extra) if n.extra else None,
         )
         for n, position in scene.ordered_nodes()
+    ]
+    resource_rows = [
+        (r.id, r.name, r.source_path, r.source_kind, r.status, r.imported_at, json.dumps(r.manifest))
+        for r in project.resources.values()
     ]
     material_rows = [
         (
@@ -197,7 +213,8 @@ def save_project(project: Project, path: str | Path | None = None) -> Path:
                 [a.to_row() for a in project.assets.values()],
             )
             conn.executemany("INSERT INTO materials VALUES (?,?,?,?,?,?,?,?)", material_rows)
-            conn.executemany("INSERT INTO nodes VALUES (?,?,?,?,?,?,?,?,?,?,?)", node_rows)
+            conn.executemany("INSERT INTO nodes VALUES (?,?,?,?,?,?,?,?,?,?,?,?)", node_rows)
+            conn.executemany("INSERT INTO resources VALUES (?,?,?,?,?,?,?)", resource_rows)
             if project.thumbnail:
                 conn.execute("INSERT INTO thumbnail VALUES (1, ?)", (project.thumbnail,))
             conn.commit()
@@ -218,7 +235,9 @@ def _migrate_v1(conn: sqlite3.Connection) -> None:
         "SELECT id, name, asset_path, transform, visible FROM scene_objects ORDER BY position"
     ).fetchall()
     new_tables = [
-        s for s in _SCHEMA.split(";") if s.strip() and not s.strip().startswith("CREATE TABLE meta ")
+        s
+        for s in _SCHEMA.split(";")
+        if any(s.strip().startswith(f"CREATE TABLE {name} ") for name in _V2_TABLES)
     ]
     conn.executescript(";".join(new_tables) + ";")
     for position, (obj_id, name, asset_path, transform, visible) in enumerate(rows):
@@ -230,7 +249,7 @@ def _migrate_v1(conn: sqlite3.Connection) -> None:
         )
         conn.execute("INSERT INTO assets VALUES (?,?,?,?,?,?,?,?,?,?)", asset.to_row())
         conn.execute(
-            "INSERT INTO nodes VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+            "INSERT INTO nodes VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
             (
                 obj_id,
                 None,
@@ -243,13 +262,26 @@ def _migrate_v1(conn: sqlite3.Connection) -> None:
                 asset.id,
                 None,
                 None,
+                None,
             ),
         )
     conn.execute("DROP TABLE scene_objects")
     conn.execute("UPDATE meta SET value = '2' WHERE key = 'schema_version'")
 
 
-_MIGRATIONS = {1: _migrate_v1}
+def _migrate_v2(conn: sqlite3.Connection) -> None:
+    """v2 → v3 : métadonnées d'origine des nœuds et ressources FiveM importées."""
+    columns = {row[1] for row in conn.execute("PRAGMA table_info(nodes)")}
+    if "extra" not in columns:
+        conn.execute("ALTER TABLE nodes ADD COLUMN extra TEXT")
+    tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+    if "resources" not in tables:
+        statement = next(s for s in _SCHEMA.split(";") if s.strip().startswith("CREATE TABLE resources "))
+        conn.execute(statement)
+    conn.execute("UPDATE meta SET value = '3' WHERE key = 'schema_version'")
+
+
+_MIGRATIONS = {1: _migrate_v1, 2: _migrate_v2}
 
 
 def load_project(path: str | Path) -> Project:
@@ -281,9 +313,30 @@ def load_project(path: str | Path) -> Project:
             materials = conn.execute("SELECT * FROM materials").fetchall()
             nodes = conn.execute("SELECT * FROM nodes ORDER BY position").fetchall()
             thumb = conn.execute("SELECT png FROM thumbnail WHERE id = 1").fetchone()
+            resource_rows = conn.execute("SELECT * FROM resources").fetchall()
     except (sqlite3.DatabaseError, ValueError) as exc:
         raise ProjectError(f"« {path.name} » est illisible ou corrompu : {exc}") from exc
-    return _build_project(path, meta, assets, materials, nodes, thumb[0] if thumb else None)
+    project = _build_project(path, meta, assets, materials, nodes, thumb[0] if thumb else None)
+    for rid, name, source_path, source_kind, status, imported_at, manifest in resource_rows:
+        try:
+            parsed = json.loads(manifest)
+        except (json.JSONDecodeError, TypeError):
+            log.warning("Manifeste illisible pour la ressource « %s », conservé vide", name)
+            parsed = {}
+        project.resources[rid] = ImportedResource(
+            name, source_path or "", source_kind or "", parsed, status or "", imported_at or "", rid
+        )
+    return project
+
+
+def _extra(raw: str | None) -> dict:
+    if not raw:
+        return {}
+    try:
+        value = json.loads(raw)
+    except (json.JSONDecodeError, TypeError):
+        return {}
+    return value if isinstance(value, dict) else {}
 
 
 def _enum(enum_cls, value, default):  # type: ignore[no-untyped-def]
@@ -334,6 +387,7 @@ def _build_project(
                 asset_id,
                 mesh_key,
                 material_id,
+                extra,
             ) = row
             if parent_id is not None and parent_id not in scene:
                 remaining.append(row)
@@ -354,6 +408,7 @@ def _build_project(
                 material_id,
                 None,
                 node_id,
+                _extra(extra),
             )
             scene.add(node, parent_id)
             progressed = True
@@ -372,6 +427,7 @@ def _build_project(
                     row[10],
                     None,
                     row[0],
+                    _extra(row[11]),
                 )
                 scene.add(remaining_node, None)
             break
@@ -453,7 +509,7 @@ def _unique_destination(folder: Path, filename: str) -> Path:
 
 
 def _companion_files(source: Path) -> list[str]:
-    """Fichiers externes référencés par un .gltf (buffers, textures) ou un .obj (mtllib)."""
+    """Fichiers externes : .gltf (buffers, textures), .obj (mtllib), .yft / .ydr (.ytd voisins)."""
     names: list[str] = []
     try:
         if source.suffix.lower() == ".gltf":
@@ -463,6 +519,10 @@ def _companion_files(source: Path) -> list[str]:
                     uri = item.get("uri", "")
                     if uri and not uri.startswith("data:"):
                         names.append(uri)
+        elif source.suffix.lower() in (".yft", ".ydr"):
+            from lsfcars.importers.yft_importer import companion_ytds
+
+            names.extend(p.name for p in companion_ytds(source))
         elif source.suffix.lower() == ".obj":
             with source.open(encoding="utf-8", errors="ignore") as fh:
                 for line in fh:

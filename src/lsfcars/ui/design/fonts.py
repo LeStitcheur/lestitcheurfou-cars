@@ -1,4 +1,4 @@
-"""Chargement des polices de marque (DM Sans, Barlow Condensed — OFL 1.1)."""
+"""Polices système (Segoe UI Variable / Segoe UI) : aucune police tierce embarquée."""
 
 from __future__ import annotations
 
@@ -7,31 +7,25 @@ from functools import lru_cache
 from PySide6.QtGui import QFont, QFontDatabase
 
 from lsfcars.core.logging_setup import get_logger
-from lsfcars.core.paths import resources_dir
-from lsfcars.ui.design import tokens
+from lsfcars.ui.design.tokens import TypographyTokens
 
 log = get_logger(__name__)
 
 _families: dict[str, str] = {}
 
 
+def _first_available(candidates: tuple[str, ...]) -> str:
+    available = set(QFontDatabase.families())
+    return next((name for name in candidates if name in available), candidates[-1])
+
+
 def load_fonts() -> dict[str, str]:
-    """Enregistre les polices embarquées. Retourne {'text': famille, 'brand': famille}."""
+    """Choisit les familles disponibles. Retourne {'text', 'brand', 'mono'}."""
     if _families:
         return dict(_families)
-    folder = resources_dir() / "fonts"
-    for path in sorted(folder.glob("*.ttf")):
-        font_id = QFontDatabase.addApplicationFont(str(path))
-        if font_id < 0:
-            log.warning("Police non chargée : %s", path.name)
-            continue
-        family = QFontDatabase.applicationFontFamilies(font_id)[0]
-        if path.name.startswith("DMSans"):
-            _families.setdefault("text", family)
-        elif path.name.startswith("BarlowCondensed"):
-            _families.setdefault("brand", family)
-    _families.setdefault("text", tokens.FONT_TEXT_FALLBACK)
-    _families.setdefault("brand", tokens.FONT_BRAND_FALLBACK)
+    _families["text"] = _first_available(TypographyTokens.TEXT_FAMILIES)
+    _families["brand"] = _first_available(TypographyTokens.DISPLAY_FAMILIES)
+    _families["mono"] = _first_available(TypographyTokens.MONO_FAMILIES)
     log.debug("Polices : %s", _families)
     return dict(_families)
 
@@ -57,9 +51,14 @@ def _font(family: str, px: int, weight: int, spacing: float, caps: bool) -> QFon
 
 
 def font(px: int, weight: int = 400, spacing: float = 0.0, caps: bool = False) -> QFont:
-    """Police de texte (DM Sans). Le QSS ne gère pas l'espacement des lettres : d'où cette API."""
+    """Police de texte. Le QSS ne gère pas l'espacement des lettres : d'où cette API."""
     return QFont(_font(text_family(), px, weight, spacing, caps))
 
 
-def brand_font(px: int, weight: int = 700, spacing: float = 1.0) -> QFont:
+def brand_font(px: int, weight: int = 600, spacing: float = 0.0) -> QFont:
+    """Police d'affichage (titres)."""
     return QFont(_font(brand_family(), px, weight, spacing, False))
+
+
+def mono_font(px: int) -> QFont:
+    return QFont(_font(load_fonts()["mono"], px, 400, 0.0, False))

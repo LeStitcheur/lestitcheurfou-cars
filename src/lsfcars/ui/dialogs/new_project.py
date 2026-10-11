@@ -27,7 +27,7 @@ class NewProjectDialog(LSModal):
             "Nouveau véhicule",
             "Un dossier de projet sera créé avec ses assets.",
             "car",
-            "red",
+            "blue",
             parent,
         )
         self.setMinimumWidth(560)

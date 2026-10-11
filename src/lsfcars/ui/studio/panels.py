@@ -162,12 +162,12 @@ class SceneExplorer(QWidget):
             | Qt.ItemFlag.ItemIsDropEnabled
         )
         dim = not scene.effective_visible(node.id)
-        item.setIcon(0, icons.icon(KIND_ICONS[node.kind], t.TEXT_FAINT if dim else "#9aa8ba", size=15))
+        item.setIcon(0, icons.icon(KIND_ICONS[node.kind], t.TEXT_FAINT if dim else t.TEXT_2, size=15))
         item.setIcon(
             1,
             icons.icon(
                 "eye" if node.visible else "eye-off",
-                "#7e8da0" if node.visible else t.TEXT_FAINT,
+                t.TEXT_MUTED if node.visible else t.TEXT_FAINT,
                 size=14,
             ),
         )
@@ -175,7 +175,7 @@ class SceneExplorer(QWidget):
             2,
             icons.icon(
                 "lock" if node.locked else "lock-open",
-                t.WARNING if node.locked else "#3a4552",
+                t.WARNING if node.locked else t.BORDER_STRONG,
                 size=14,
             ),
         )
@@ -335,7 +335,7 @@ class MaterialPreview(QWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         painter.setPen(Qt.PenStyle.NoPen)
-        painter.setBrush(QColor("#0d1116"))
+        painter.setBrush(QColor(t.BG_RAISED))
         painter.drawRoundedRect(self.rect(), 12, 12)
         material = self.material
         if material is None:
@@ -592,7 +592,7 @@ class PropertiesPanel(QWidget):
         layout.setContentsMargins(12, 10, 12, 8)
         layout.setSpacing(8)
         header = QHBoxLayout()
-        self.kind_icon = LSIconBox("cuboid", "red", 30)
+        self.kind_icon = LSIconBox("cuboid", "blue", 30)
         self.title = label("Aucune sélection", "h3")
         self.kind_badge = LSBadge("—")
         header.addWidget(self.kind_icon)
@@ -713,7 +713,7 @@ class PropertiesPanel(QWidget):
             scene = session.scene
             self.title.setText(node.name)
             self.kind_badge.setText(node.kind.label)
-            self.kind_icon.setPixmap(icons.pixmap(KIND_ICONS[node.kind], "#f97b91", 15))
+            self.kind_icon.setPixmap(icons.pixmap(KIND_ICONS[node.kind], t.ACCENT_2, 15))
             self.name.setText(node.name)
             self.visible.setChecked(node.visible)
             self.locked.setChecked(node.locked)
@@ -838,7 +838,7 @@ class BottomPanel(LSTabs):
             row, column = index % 5, (index // 5) * 2
             grid.addWidget(label(name, "faint"), row, column)
             value = label("—")
-            value.setStyleSheet("color: #dfe5ee; font-weight: 600;")
+            value.setStyleSheet(f"color: {t.TEXT}; font-weight: 600;")
             grid.addWidget(value, row, column + 1)
             self.values[name] = value
         grid.setColumnStretch(4, 1)

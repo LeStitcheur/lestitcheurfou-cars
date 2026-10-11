@@ -65,8 +65,12 @@ def test_import_glb_hierarchy(sample_glb):
 
 
 def test_import_errors(tmp_path):
-    with pytest.raises(UnsupportedYetError, match="version future"):
-        load_model(tmp_path / "vehicule.yft")
+    with pytest.raises(UnsupportedYetError, match="Vehicle Import Studio"):
+        load_model(tmp_path / "textures.ytd")
+    corrupt = tmp_path / "vehicule.yft"
+    corrupt.write_bytes(b"RSC7" + b"\x00" * 40)
+    with pytest.raises(ModelLoadError):
+        load_model(corrupt)
     empty = tmp_path / "vide.glb"
     empty.write_bytes(b"")
     with pytest.raises(ModelLoadError, match="vide"):

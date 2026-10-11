@@ -33,7 +33,7 @@ class WindowButton(QToolButton):
         self.setObjectName("LSWindowButton")
         if role:
             self.setProperty("role", role)
-        self.setIcon(icons.icon(icon, "#aeb7c4", "#ffffff", size=14))
+        self.setIcon(icons.icon(icon, t.TEXT_3, t.TEXT, size=14))
         self.setIconSize(icons.icon_size(14))
         self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         tooltip(self, tip)
@@ -60,7 +60,7 @@ class LSTopbar(QWidget):
         layout.addWidget(self.sidebar_button)
 
         logo = QLabel()
-        logo.setPixmap(icons.emblem(26))
+        logo.setPixmap(icons.logo(26))
         layout.addWidget(logo)
         brand = QVBoxLayout()
         brand.setSpacing(0)
@@ -120,7 +120,7 @@ class LSTopbar(QWidget):
 
         divider = QFrame()
         divider.setFixedSize(1, 22)
-        divider.setStyleSheet(f"background: {t.BORDER};")
+        divider.setStyleSheet(f"background: {t.BORDER_SOFT};")
         layout.addSpacing(4)
         layout.addWidget(divider)
 
@@ -149,7 +149,7 @@ class LSTopbar(QWidget):
 
     def set_sidebar_collapsed(self, collapsed: bool) -> None:
         name = "panel-left-open" if collapsed else "panel-left-close"
-        self.sidebar_button.setIcon(icons.icon(name, t.TEXT_3, "#ffffff", size=17))
+        self.sidebar_button.setIcon(icons.icon(name, t.TEXT_3, t.TEXT, size=17))
         text = "Déplier la barre latérale" if collapsed else "Réduire la barre latérale"
         tooltip(self.sidebar_button, text, "Ctrl+B")
 
@@ -186,6 +186,6 @@ class LSTopbar(QWidget):
         if watched is self._window and event.type() == QEvent.Type.WindowStateChange:
             maximized = self._window.isMaximized()
             name = "copy" if maximized else "square"
-            self.max_button.setIcon(icons.icon(name, "#aeb7c4", "#ffffff", size=14))
+            self.max_button.setIcon(icons.icon(name, t.TEXT_3, t.TEXT, size=14))
             tooltip(self.max_button, "Restaurer" if maximized else "Agrandir")
         return False

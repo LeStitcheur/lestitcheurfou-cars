@@ -26,6 +26,7 @@ from lsfcars.core.logging_setup import get_logger
 from lsfcars.render import primitives
 from lsfcars.scene import mathutils
 from lsfcars.scene.mesh import MeshData
+from lsfcars.ui.design import tokens
 
 log = get_logger(__name__)
 
@@ -94,7 +95,7 @@ void main() {
                + specColor * (spec * 1.6 + env * metal)
                + albedo * metal * 0.25 * (diff + fill);
     float rim = pow(1.0 - max(dot(n, v), 0.0), 3.0);
-    color += vec3(0.14, 0.05, 0.07) * rim;  // liseré chaud du studio
+    color += vec3(0.04, 0.09, 0.16) * rim;  // liseré froid du studio (bleu)
     vec3 accent = vec3(1.0, 0.30, 0.38);
     color = mix(color, color * 0.75 + accent * (0.18 + 0.75 * rim), uHighlight * 0.55);
     fragColor = vec4(color, alpha);
@@ -139,12 +140,22 @@ out vec4 fragColor;
 void main() { fragColor = vec4(mix(uBottom, uTop, clamp(vY * 0.5 + 0.5, 0.0, 1.0)), 1.0); }
 """
 
-BACKGROUND_TOP = (0.088, 0.098, 0.118)
-BACKGROUND_BOTTOM = (0.040, 0.045, 0.055)
-AXIS_COLORS = {0: (1.0, 0.36, 0.36), 1: (0.48, 0.85, 0.56), 2: (0.31, 0.62, 1.0)}
-HOVER_COLOR = (1.0, 0.86, 0.35)
-SELECTION_EDGE = (1.0, 0.42, 0.50, 0.95)
-WIRE_COLOR = (0.62, 0.68, 0.76, 0.85)
+
+def gl_rgb(color: str) -> tuple[float, float, float]:
+    """Couleur hexadécimale des tokens → triplet OpenGL (0..1)."""
+    value = color.lstrip("#")
+    return tuple(int(value[i : i + 2], 16) / 255.0 for i in (0, 2, 4))  # type: ignore[return-value]
+
+
+# Toutes les couleurs du rendu proviennent du design system Dark Premium.
+BACKGROUND_TOP = gl_rgb(tokens.ColorTokens.BG_SECONDARY)
+BACKGROUND_BOTTOM = gl_rgb(tokens.ColorTokens.BG_MAIN)
+AXIS_COLORS = {0: gl_rgb(tokens.AXIS_X), 1: gl_rgb(tokens.AXIS_Y), 2: gl_rgb(tokens.AXIS_Z)}
+HOVER_COLOR = gl_rgb(tokens.ColorTokens.ELECTRIC)
+SELECTION_EDGE = (*gl_rgb(tokens.ColorTokens.ELECTRIC), 0.95)
+WIRE_COLOR = (*gl_rgb(tokens.ColorTokens.TEXT_SECONDARY), 0.85)
+GRID_MINOR = (*gl_rgb(tokens.ColorTokens.TEXT_SECONDARY), 0.14)
+GRID_MAJOR = (*gl_rgb(tokens.ColorTokens.TEXT_SECONDARY), 0.28)
 
 
 @dataclass
@@ -194,7 +205,7 @@ def glsl_header(major: int, minor: int) -> str:
 
 def build_grid(half_size: int = 40, step: float = 1.0) -> np.ndarray:
     """Lignes de la grille au sol (plan XZ) : (N, 7) position + couleur RGBA."""
-    minor, major = (0.42, 0.46, 0.54, 0.16), (0.50, 0.55, 0.64, 0.30)
+    minor, major = GRID_MINOR, GRID_MAJOR
     axis_x, axis_z = (*AXIS_COLORS[0], 0.75), (*AXIS_COLORS[2], 0.75)
     lines = []
     extent = half_size * step

@@ -24,7 +24,8 @@ def hero() -> None:
     from PySide6.QtWidgets import QApplication
 
     from lsfcars.project.session import ProjectSession
-    from lsfcars.ui.design import apply_design
+    from lsfcars.render.renderer import gl_rgb
+    from lsfcars.ui.design import apply_design, tokens
     from lsfcars.ui.gl_setup import configure_opengl
     from lsfcars.ui.viewport import Viewport3D
 
@@ -34,6 +35,11 @@ def hero() -> None:
     session = ProjectSession.create(tempfile.mkdtemp(), "Hero")
     session.import_model(ROOT / "samples" / "vehicule_test.glb")
     session.selection.clear()
+    # Visuel de la bannière : carrosserie au bleu principal du design system
+    # (le modèle de test lui-même reste inchangé).
+    for material in session.scene.materials.values():
+        if material.name == "Peinture rouge LS":
+            material.base_color = (*gl_rgb(tokens.ColorTokens.PRIMARY), 1.0)
     viewport = Viewport3D()
     viewport.toolbar.hide()
     viewport.stats_label.hide()
@@ -106,7 +112,38 @@ def screens(width: int, height: int, scale: str) -> None:
 
     def step_import() -> None:
         window.navigate("import")
-        QTimer.singleShot(300, lambda: (grab("import"), step_upcoming()))
+        page = window.import_page
+        page.analysis_finished.connect(lambda _ok: QTimer.singleShot(300, step_import_preview))
+        page.analyze(ROOT / "samples" / "fivem" / "lsfdemo")
+
+    def step_import_preview() -> None:
+        page = window.import_page
+        page.show_file("stream/lsfdemo.yft")
+        page.preview_finished.connect(lambda _ok: QTimer.singleShot(500, step_import_views))
+        page.preview_model("lsfdemo")
+
+    def step_import_views() -> None:
+        page = window.import_page
+        page.select_parts(["door_dside_f"])
+        page.right.setCurrentWidget(page.vehicle)
+        QTimer.singleShot(400, lambda: (grab("import_studio"), step_exploded()))
+
+    def step_exploded() -> None:
+        page = window.import_page
+        page.select_parts([])
+        page.set_explode(65)
+        page.right.setCurrentWidget(page.textures)
+        page.textures.list.setCurrentRow(2)
+        QTimer.singleShot(400, lambda: (grab("vue_eclatee_textures"), step_metadata()))
+
+    def step_metadata() -> None:
+        page = window.import_page
+        page.reset_view()
+        page.set_mode("filaire")
+        page.right.setCurrentWidget(page.metadata)
+        page.metadata.select_path("data/handling.meta")
+        page.bottom.setCurrentIndex(0)
+        QTimer.singleShot(400, lambda: (grab("metadonnees_filaire"), step_upcoming()))
 
     def step_upcoming() -> None:
         window.navigate("lspd")

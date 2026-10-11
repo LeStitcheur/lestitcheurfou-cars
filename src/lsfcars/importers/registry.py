@@ -1,4 +1,4 @@
-"""Sélection de l'importateur selon l'extension ; formats GTA V / FiveM prévus."""
+"""Sélection de l'importateur selon l'extension (modèles 3D, dont .yft / .ydr natifs)."""
 
 from __future__ import annotations
 
@@ -13,17 +13,21 @@ from lsfcars.importers.base import (
 )
 from lsfcars.importers.fbx_blender import FbxBlenderImporter
 from lsfcars.importers.trimesh_importer import TrimeshImporter
+from lsfcars.importers.yft_importer import YftImporter
 
-IMPORTERS = (TrimeshImporter(), FbxBlenderImporter())
+IMPORTERS = (TrimeshImporter(), FbxBlenderImporter(), YftImporter())
 
-# Formats reconnus dont la prise en charge est prévue : aucun chargement n'est simulé.
-PLANNED_FORMATS: dict[str, str] = {
-    ".yft": "Modèle de véhicule GTA V (fragment)",
-    ".ydr": "Modèle GTA V (drawable)",
+# Fichiers de ressource FiveM qui ne sont pas des modèles 3D : ils sont lus par le
+# Vehicle Import Studio (analyse, textures, métadonnées), pas par l'import de modèle.
+RESOURCE_FORMATS: dict[str, str] = {
     ".ytd": "Dictionnaire de textures GTA V",
     ".rpf": "Archive GTA V",
     ".meta": "Métadonnées de véhicule FiveM",
+    ".ybn": "Collision GTA V",
+    ".zip": "Ressource FiveM compressée",
 }
+# Compatibilité : formats reconnus mais non importables comme modèle.
+PLANNED_FORMATS = RESOURCE_FORMATS
 
 
 def supported_extensions() -> dict[str, str]:
@@ -49,10 +53,10 @@ def load_model(path: str | Path, progress: Progress = no_progress) -> ImportResu
     """Vérifie et charge un fichier 3D. Lève ModelLoadError avec un message lisible."""
     path = Path(path)
     ext = path.suffix.lower()
-    if ext in PLANNED_FORMATS:
+    if ext in RESOURCE_FORMATS:
         raise UnsupportedYetError(
-            f"Le format {ext} ({PLANNED_FORMATS[ext]}) sera pris en charge dans une version "
-            "future. Il n'est pas encore lisible par LeStitcheurFou Cars."
+            f"Le format {ext} ({RESOURCE_FORMATS[ext]}) n'est pas un modèle 3D importable "
+            "directement. Ouvrez-le dans le Vehicle Import Studio pour l'analyser."
         )
     importer = importer_for(path)
     if importer is None:

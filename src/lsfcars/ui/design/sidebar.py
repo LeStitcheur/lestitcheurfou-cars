@@ -1,8 +1,7 @@
-"""LSSidebar : navigation verticale de la suite LeStitcheur (rétractable)."""
+"""LSSidebar : navigation latérale moderne et rétractable."""
 
 from __future__ import annotations
 
-import getpass
 from collections.abc import Sequence
 from dataclasses import dataclass
 
@@ -38,7 +37,7 @@ class NavEntry:
 
 
 class NavItem(QPushButton):
-    """Entrée de navigation ; l'entrée active reçoit un liseré rouge à gauche."""
+    """Entrée de navigation ; l'entrée active reçoit un fond bleu et un liseré bleu électrique."""
 
     def __init__(self, entry: NavEntry) -> None:
         super().__init__(entry.label)
@@ -46,7 +45,7 @@ class NavItem(QPushButton):
         self.setObjectName("LSNavItem")
         self.setCheckable(True)
         self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.setIcon(icons.icon(entry.icon, "#687587", "#ff677a", size=18))
+        self.setIcon(icons.icon(entry.icon, t.TEXT_MUTED, t.ACCENT_2, size=18))
         self.setIconSize(icons.icon_size(18))
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         if entry.upcoming:
@@ -63,7 +62,7 @@ class NavItem(QPushButton):
         self.badge.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Maximum)
         self.badge.hide()
         row.addWidget(self.badge, 0, Qt.AlignmentFlag.AlignVCenter)
-        # Point discret « à venir » (même vocabulaire que les indicateurs de LeStitcheur Control)
+        # Point discret « à venir »
         self.dot = QLabel()
         self.dot.setObjectName("LSNavDot")
         self.dot.setFixedSize(6, 6)
@@ -94,42 +93,6 @@ class NavItem(QPushButton):
             painter.drawRoundedRect(QRect(0, 11, 2, max(self.height() - 22, 4)), 1, 1)
 
 
-class ProfileCard(QFrame):
-    """Carte profil : utilisateur Windows local (aucune donnée inventée)."""
-
-    def __init__(self) -> None:
-        super().__init__()
-        self.setObjectName("LSProfileCard")
-        layout = QHBoxLayout(self)
-        layout.setContentsMargins(12, 12, 12, 12)
-        layout.setSpacing(11)
-        avatar = QLabel()
-        avatar.setPixmap(icons.emblem(40))
-        avatar.setFixedSize(40, 40)
-        layout.addWidget(avatar)
-        try:
-            user = getpass.getuser()
-        except (KeyError, OSError):
-            user = "Utilisateur"
-        self.name = QLabel(user)
-        self.name.setObjectName("LSProfileName")
-        self.name.setFont(fonts.font(15, 700))
-        self.meta = QLabel("Espace local")
-        self.meta.setObjectName("LSProfileMeta")
-        self.texts = QWidget()
-        texts = QVBoxLayout(self.texts)
-        texts.setContentsMargins(0, 0, 0, 0)
-        texts.setSpacing(2)
-        texts.addWidget(self.name)
-        texts.addWidget(self.meta)
-        layout.addWidget(self.texts, 1)
-
-    def set_collapsed(self, collapsed: bool) -> None:
-        self.texts.setVisible(not collapsed)
-        margin = 0 if collapsed else 12
-        self.layout().setContentsMargins(margin, margin, margin, margin)
-
-
 class LSSidebar(QWidget):
     navigate = Signal(str)
     collapsed_changed = Signal(bool)
@@ -145,10 +108,6 @@ class LSSidebar(QWidget):
         outer = QVBoxLayout(self)
         outer.setContentsMargins(12, 16, 12, 12)
         outer.setSpacing(0)
-        self.profile = ProfileCard()
-        outer.addWidget(self.profile)
-        outer.addSpacing(20)
-
         self.workspace_row = QWidget()
         workspace = QHBoxLayout(self.workspace_row)
         workspace.setContentsMargins(10, 0, 6, 0)
@@ -194,7 +153,7 @@ class LSSidebar(QWidget):
 
         self.setFixedWidth(t.SIDEBAR_WIDTH)
         self._animation = QPropertyAnimation(self, b"minimumWidth", self)
-        self._animation.setDuration(170)
+        self._animation.setDuration(t.AnimationTokens.NORMAL_MS)
         self._animation.setEasingCurve(QEasingCurve.Type.OutCubic)
         self._animation.valueChanged.connect(lambda value: self.setMaximumWidth(int(value)))
 
@@ -225,7 +184,6 @@ class LSSidebar(QWidget):
         for section in self._sections:
             section.setVisible(not collapsed)
         self.workspace_row.setVisible(not collapsed)
-        self.profile.set_collapsed(collapsed)
         target = t.SIDEBAR_COLLAPSED_WIDTH if collapsed else t.SIDEBAR_WIDTH
         self._animation.stop()
         if animate and self.isVisible():

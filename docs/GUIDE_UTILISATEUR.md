@@ -1,4 +1,42 @@
-# Guide utilisateur — LeStitcheurFou Cars 0.2.0
+# Guide utilisateur — LeStitcheurFou Cars 0.3.0
+
+## Nouveautés 0.3 : Vehicle Import Studio
+
+1. Ouvrez **Vehicle Import Studio** dans la navigation (ou « Importer un addon FiveM » sur le
+   tableau de bord).
+2. Choisissez une source : **Dossier** (ressource FiveM), **ZIP**, **RPF** (archive non
+   chiffrée), **Fichier** (.yft, .ytd, .meta…) ou **Installation GTA V** (inventaire des
+   archives de votre copie ; seules les archives non chiffrées peuvent être ouvertes). Le
+   glisser-déposer fonctionne aussi.
+3. L'analyse s'exécute en arrière-plan (bouton **Annuler** en bas). Chaque fichier reçoit un
+   statut : Compatible, Partiellement compatible, Dépendance manquante, Erreur, Format non pris
+   en charge. Cliquez un fichier pour sa fiche ; double-cliquez un diagnostic pour retrouver le
+   fichier concerné.
+4. Onglet **Véhicule** : choisissez le modèle puis **Visualiser** (ou **Version _hi**). Le
+   véhicule apparaît au centre, ses composants à gauche (Hiérarchie : par composant, par os,
+   points d'ancrage). Décochez un composant pour le masquer (affichage seulement).
+5. Inspection : **Isolé**, **Éclaté** (curseur d'intensité), **Filaire**, **Matériaux**,
+   **Os**, **Ancrages**, **Statistiques** ; icônes Isoler, Tout afficher, Recentrer,
+   Réinitialiser. Le mode Collisions est signalé « non implémenté ».
+6. Onglets **Méta** (métadonnées structurées, recherche, vérifications, texte d'origine),
+   **Textures** (aperçu, format, transparence, mémoire, export PNG / DDS, préparation pour les
+   livrées), **Blender** (détection de Blender et Sollumz), **Formats** (ce qui est réellement
+   pris en charge).
+7. **Importer dans le projet** : le modèle, ses textures et ses métadonnées sont copiés dans le
+   projet (un projet est proposé s'il n'y en a pas), puis le Studio 3D s'ouvre sur le véhicule.
+   Les fichiers d'origine ne sont jamais modifiés. Enregistrez (Ctrl+S) : la ressource et son
+   manifeste sont conservés dans le `.lsfc`.
+
+Dans le Studio 3D, les pièces importées se modifient comme les autres (transformations,
+renommage, duplication, masquage, verrouillage, matériaux, annuler / rétablir). Un avertissement
+« Compatibilité FiveM » apparaît si une opération risque de casser le véhicule dans FiveM.
+
+Formats, limites et règles : [FIVEM_IMPORT.md](FIVEM_IMPORT.md).
+
+L'interface adopte la direction **Dark Premium** (bleu principal pour la sélection et les
+actions principales, bleu électrique pour le focus et les éléments actifs).
+
+# Guide 0.2.0
 
 ## Nouveautés 0.2 en bref
 

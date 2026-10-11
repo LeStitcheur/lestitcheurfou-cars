@@ -67,6 +67,9 @@ class Viewport3D(QOpenGLWidget):
         self.tool = GizmoMode.SELECT
         self.shading = "material"
         self.grid_visible = True
+        # Affichage non destructif (inspection) : isolation et vue éclatée n'altèrent pas la scène
+        self.isolated: set[str] | None = None
+        self.display_offsets: dict[str, np.ndarray] = {}
         self._gl_error: str | None = None
         self._press: QPoint | None = None
         self._last = QPoint()
@@ -256,6 +259,27 @@ class Viewport3D(QOpenGLWidget):
         self.view_changed.emit()
         self.update()
 
+    def set_isolation(self, node_ids: set[str] | None) -> None:
+        """Affiche uniquement ces maillages (None : tout). Ne modifie pas la scène."""
+        self.isolated = set(node_ids) if node_ids is not None else None
+        self.update()
+
+    def set_display_offsets(self, offsets: dict[str, np.ndarray]) -> None:
+        """Décalages d'affichage par maillage (vue éclatée). Ne modifie pas la scène."""
+        self.display_offsets = {k: np.asarray(v, dtype=np.float64) for k, v in offsets.items()}
+        self.update()
+
+    def _display_matrix(self, node_id: str, world: np.ndarray) -> np.ndarray:
+        offset = self.display_offsets.get(node_id)
+        if offset is None:
+            return world
+        moved = world.copy()
+        moved[:3, 3] += offset
+        return moved
+
+    def _displayed(self, node_id: str) -> bool:
+        return self.isolated is None or node_id in self.isolated
+
     def frame_bounds(self, bounds: tuple[np.ndarray, np.ndarray] | None) -> None:
         if bounds is None:
             self.camera.reset()
@@ -301,13 +325,14 @@ class Viewport3D(QOpenGLWidget):
         for node in scene.walk():  # parents avant enfants : matrices cumulées une seule fois
             worlds[node.id] = worlds[node.parent_id] @ node.transform.matrix()
             visible[node.id] = visible[node.parent_id] and node.visible
-            if node.kind is not NodeKind.MESH or not visible[node.id]:
+            if node.kind is not NodeKind.MESH or not visible[node.id] or not self._displayed(node.id):
                 continue
             mesh = session.geometry_for(node)
             if mesh is None:
                 continue
             material = scene.material_for(node.id)
-            item = DrawItem(mesh, worlds[node.id], selected=node.id in selected)
+            world = self._display_matrix(node.id, worlds[node.id])
+            item = DrawItem(mesh, world, selected=node.id in selected)
             if material is not None:
                 item.base_color = material.base_color
                 item.roughness, item.metallic = material.roughness, material.metallic
@@ -555,9 +580,12 @@ class Viewport3D(QOpenGLWidget):
         for node in scene.mesh_nodes():
             if not scene.effective_visible(node.id) or scene.effective_locked(node.id):
                 continue
+            if not self._displayed(node.id):
+                continue
             mesh = self.session.geometry_for(node)
             if mesh is not None:
-                candidates.append((node.id, scene.world_matrix(node.id), [mesh]))
+                world = self._display_matrix(node.id, scene.world_matrix(node.id))
+                candidates.append((node.id, world, [mesh]))
         return picking.pick(origin, direction, candidates)
 
     def wheelEvent(self, event: QWheelEvent) -> None:  # noqa: N802

@@ -1,6 +1,6 @@
 """LeStitcheurFou Cars — atelier de création de véhicules pour FiveM."""
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 APP_NAME = "LeStitcheurFou Cars"
 APP_ID = "LeStitcheurFouCars"

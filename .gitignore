@@ -44,6 +44,9 @@ secrets/
 *.ycd
 *.ymap
 *.ytyp
+*.ybn
+# Addon de démonstration : régénéré (scripts/generate_demo_addon.py), jamais versionné
+/samples/fivem/
 
 # --- Projets et données utilisateur locaux ---
 *.lsfc
