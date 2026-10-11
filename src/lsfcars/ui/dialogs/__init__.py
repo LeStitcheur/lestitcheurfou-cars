@@ -1,0 +1,1 @@
+"""Boîtes de dialogue."""

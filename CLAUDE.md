@@ -11,8 +11,13 @@ Instructions pour les agents travaillant sur ce dépôt.
 
 ## Stack
 
-Python 3.12+, PySide6 (Essentials uniquement), OpenGL 3.3 core via PyOpenGL, trimesh (import 3D),
-SQLite (projets `.lsfc`), pytest + pytest-qt, PyInstaller, GitHub Actions.
+Python 3.12+, PySide6 (Essentials uniquement), trimesh (import 3D), SQLite (projets `.lsfc`),
+pytest + pytest-qt, PyInstaller, GitHub Actions.
+
+Rendu : classes OpenGL de Qt (`QOpenGLShaderProgram`, `QOpenGLBuffer`…), **pas PyOpenGL** — PyOpenGL
+appelle l'`opengl32.dll` système et casse le rendu logiciel Mesa embarqué par Qt (`--software-gl`,
+utilisé en CI). Shaders compatibles GLSL 1.30 et 3.30 (en-tête ajouté selon le contexte).
+`glDrawElements` exige `shiboken6.VoidPtr(0)` comme offset.
 
 ## Commandes
 
