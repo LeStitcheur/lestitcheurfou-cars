@@ -19,7 +19,15 @@ from PySide6.QtWidgets import (
 
 from lsfcars.core.logging_setup import memory_handler
 from lsfcars.core.paths import logs_dir
-from lsfcars.ui.theme import LOG_LEVEL_COLORS
+from lsfcars.ui.design import tokens
+
+LOG_LEVEL_COLORS = {
+    "DEBUG": tokens.TEXT_MUTED,
+    "INFO": "#c9d2dd",
+    "WARNING": tokens.WARNING,
+    "ERROR": tokens.ERROR,
+    "CRITICAL": tokens.ERROR,
+}
 
 LEVEL_FILTERS = [
     ("Tous les messages", logging.DEBUG),
@@ -65,6 +73,7 @@ class LogPanel(QWidget):
         layout.addLayout(toolbar)
 
         self.view = QPlainTextEdit()
+        self.view.setObjectName("LSLog")
         self.view.setReadOnly(True)
         self.view.setMaximumBlockCount(MAX_ENTRIES)
         font = QFont("Cascadia Mono")

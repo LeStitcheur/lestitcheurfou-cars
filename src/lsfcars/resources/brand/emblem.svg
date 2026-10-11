@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Emblème LeStitcheurFou">
+<defs><linearGradient id="red" x2=".4" y2="1"><stop stop-color="#ff5267"/><stop offset="1" stop-color="#d60929"/></linearGradient></defs>
+<path d="M40 10 213 10 246 44 246 210 213 246 40 246 10 215 10 42Z" fill="#0d1015" stroke="#e72140" stroke-width="5"/>
+<path d="m15 205 223-144-12 25L30 222Zm9-128 182 134-29-2L20 95Z" fill="#921529" opacity=".55"/>
+<path d="m93 59 21 13 16-30 16 30 24-16-12 36-56 2Z" fill="url(#red)" stroke="#fff0f1" stroke-width="3"/>
+<path d="m53 108 25-6-14 65 32-4-5 23-53 3Z" fill="#fff7f4" stroke="#08090d" stroke-width="5" stroke-linejoin="round"/>
+<path d="m112 104 52-5-6 23-34 2-2 9 28 13-10 40-53 5 6-24 31-2 3-10-29-13Z" fill="#fff7f4" stroke="#08090d" stroke-width="5" stroke-linejoin="round"/>
+<path d="m176 99 49-6-6 25-29 3-4 15 26-3-6 24-26 3-7 26-26 3Z" fill="url(#red)" stroke="#08090d" stroke-width="5" stroke-linejoin="round"/>
+<path d="m39 207 181-24-9 13-137 25 119-6-12 9-120 8Z" fill="#ff2647"/>
+<path d="m30 50 10-10M214 221l11-12M213 39l10 11" stroke="#fff2ec" stroke-width="4"/>
+</svg>

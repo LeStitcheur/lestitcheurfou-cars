@@ -1,28 +1,15 @@
-"""Boîte de dialogue « Nouveau projet »."""
+"""Boîte de dialogue « Nouveau véhicule » (LSModal)."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
 
-from PySide6.QtWidgets import (
-    QComboBox,
-    QDialog,
-    QDialogButtonBox,
-    QFileDialog,
-    QFormLayout,
-    QHBoxLayout,
-    QLabel,
-    QLineEdit,
-    QPlainTextEdit,
-    QPushButton,
-    QVBoxLayout,
-    QWidget,
-)
+from PySide6.QtWidgets import QFileDialog, QFormLayout, QHBoxLayout, QPlainTextEdit, QWidget
 
-from lsfcars.core.paths import default_projects_dir
 from lsfcars.project.model import VehicleRole, VehicleType
 from lsfcars.project.store import ProjectError, safe_folder_name
+from lsfcars.ui.design.components import LSButton, LSInput, LSModal, LSSelect, label
 
 
 @dataclass
@@ -34,81 +21,75 @@ class NewProjectRequest:
     description: str
 
 
-class NewProjectDialog(QDialog):
-    def __init__(self, parent: QWidget | None = None) -> None:
-        super().__init__(parent)
-        self.setWindowTitle("Nouveau projet")
-        self.setMinimumWidth(520)
-
-        layout = QVBoxLayout(self)
+class NewProjectDialog(LSModal):
+    def __init__(self, default_dir: Path, parent: QWidget | None = None) -> None:
+        super().__init__(
+            "Nouveau véhicule",
+            "Un dossier de projet sera créé avec ses assets.",
+            "car",
+            "red",
+            parent,
+        )
+        self.setMinimumWidth(560)
         form = QFormLayout()
-        self.name_edit = QLineEdit("Nouveau véhicule")
+        form.setVerticalSpacing(10)
+        self.name_edit = LSInput()
+        self.name_edit.setText("Nouveau véhicule")
         self.name_edit.selectAll()
         self.name_edit.textChanged.connect(self._validate)
-        self.type_combo = QComboBox()
-        for vt in VehicleType:
-            self.type_combo.addItem(vt.label, vt.value)
-        self.role_combo = QComboBox()
-        for role in VehicleRole:
-            self.role_combo.addItem(role.label, role.value)
-        location_row = QHBoxLayout()
-        self.location_edit = QLineEdit(str(default_projects_dir()))
+        self.type_combo = LSSelect([(vt.label, vt.value) for vt in VehicleType])
+        self.role_combo = LSSelect([(r.label, r.value) for r in VehicleRole])
+        location = QHBoxLayout()
+        self.location_edit = LSInput()
+        self.location_edit.setText(str(default_dir))
         self.location_edit.textChanged.connect(self._validate)
-        browse = QPushButton("Parcourir…")
+        browse = LSButton("Parcourir…", "secondary", small=True)
         browse.clicked.connect(self._browse)
-        location_row.addWidget(self.location_edit, 1)
-        location_row.addWidget(browse)
+        location.addWidget(self.location_edit, 1)
+        location.addWidget(browse)
         self.description_edit = QPlainTextEdit()
-        self.description_edit.setPlaceholderText("Facultatif")
+        self.description_edit.setPlaceholderText("Facultatif : inspiration, usage prévu…")
         self.description_edit.setFixedHeight(70)
-        form.addRow("Nom du projet", self.name_edit)
-        form.addRow("Type de véhicule", self.type_combo)
-        form.addRow("Usage", self.role_combo)
-        form.addRow("Emplacement", location_row)
-        form.addRow("Description", self.description_edit)
-        layout.addLayout(form)
-
-        self.preview = QLabel()
-        self.preview.setObjectName("Muted")
-        self.preview.setWordWrap(True)
-        layout.addWidget(self.preview)
-
-        self.buttons = QDialogButtonBox(
-            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
+        for title, widget in (
+            ("Nom", self.name_edit),
+            ("Type", self.type_combo),
+            ("Usage", self.role_combo),
+        ):
+            form.addRow(label(title, "muted"), widget)
+        form.addRow(label("Emplacement", "muted"), location)
+        form.addRow(label("Description", "muted"), self.description_edit)
+        self.body.addLayout(form)
+        self.preview = label("", "faint", wrap=True)
+        self.body.addWidget(self.preview)
+        self.add_button("Annuler")
+        self.create_button = self.add_button(
+            "Créer le projet", "primary", "ok", "plus", accept=True
         )
-        self.buttons.button(QDialogButtonBox.StandardButton.Ok).setText("Créer le projet")
-        self.buttons.button(QDialogButtonBox.StandardButton.Cancel).setText("Annuler")
-        self.buttons.accepted.connect(self.accept)
-        self.buttons.rejected.connect(self.reject)
-        layout.addWidget(self.buttons)
         self._validate()
 
     def _browse(self) -> None:
         folder = QFileDialog.getExistingDirectory(
-            self, "Choisir l'emplacement du projet", self.location_edit.text()
+            self, "Emplacement du projet", self.location_edit.text()
         )
         if folder:
             self.location_edit.setText(folder)
 
     def _validate(self) -> None:
-        ok_button = self.buttons.button(QDialogButtonBox.StandardButton.Ok)
         location = self.location_edit.text().strip()
-        if not location:
-            self.preview.setText("Choisissez un emplacement.")
-            ok_button.setEnabled(False)
-            return
         try:
             folder = Path(location) / safe_folder_name(self.name_edit.text())
         except ProjectError as exc:
             self.preview.setText(str(exc))
-            ok_button.setEnabled(False)
+            self.create_button.setEnabled(False)
             return
-        if folder.exists() and any(folder.iterdir()):
-            self.preview.setText(f"⚠ Le dossier existe déjà et n'est pas vide : {folder}")
-            ok_button.setEnabled(False)
+        if not location:
+            message, ok = "Choisissez un emplacement.", False
+        elif folder.exists() and any(folder.iterdir()):
+            message, ok = f"⚠ Le dossier existe déjà et n'est pas vide : {folder}", False
         else:
-            self.preview.setText(f"Le projet sera créé dans : {folder}")
-            ok_button.setEnabled(True)
+            message, ok = f"Le projet sera créé dans : {folder}", True
+        self.preview.setText(message)
+        self.create_button.setEnabled(ok)
 
     def request(self) -> NewProjectRequest:
         return NewProjectRequest(

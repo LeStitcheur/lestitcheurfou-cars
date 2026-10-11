@@ -35,7 +35,9 @@ class MeshData:
     normals: np.ndarray | None = None  # (N, 3) float32, calculées si absentes
     colors: np.ndarray | None = None  # (N, 4) uint8, déduites de ``color`` si absentes
     color: tuple[float, float, float, float] = DEFAULT_COLOR  # couleur représentative
+    uvs: np.ndarray | None = None  # (N, 2) float32, coordonnées de texture
     _bounds: tuple[np.ndarray, np.ndarray] | None = field(default=None, repr=False)
+    _edges: np.ndarray | None = field(default=None, repr=False)
 
     def __post_init__(self) -> None:
         self.positions = np.ascontiguousarray(self.positions, dtype=np.float32).reshape(-1, 3)
@@ -53,6 +55,25 @@ class MeshData:
         self.colors = np.ascontiguousarray(self.colors, dtype=np.uint8).reshape(-1, 4)
         if len(self.colors) != len(self.positions):
             raise ValueError("une couleur par sommet est attendue")
+        if self.uvs is not None:
+            self.uvs = np.ascontiguousarray(self.uvs, dtype=np.float32).reshape(-1, 2)
+            if len(self.uvs) != len(self.positions):
+                self.uvs = None
+
+    def edges(self) -> np.ndarray:
+        """Arêtes uniques (M, 2) uint32, pour le mode filaire et le contour de sélection."""
+        if self._edges is None:
+            if self.triangle_count == 0:
+                self._edges = np.zeros((0, 2), np.uint32)
+            else:
+                tri = self.indices.astype(np.int64)
+                pairs = np.concatenate([tri[:, [0, 1]], tri[:, [1, 2]], tri[:, [2, 0]]])
+                pairs.sort(axis=1)
+                # sommets dupliqués aux arêtes vives : on dédoublonne par position
+                keys = np.round(self.positions[pairs] * 1e4).astype(np.int64).reshape(-1, 6)
+                _, first = np.unique(keys, axis=0, return_index=True)
+                self._edges = np.ascontiguousarray(pairs[np.sort(first)], dtype=np.uint32)
+        return self._edges
 
     @property
     def vertex_count(self) -> int:

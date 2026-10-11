@@ -50,9 +50,16 @@ def main(argv: Sequence[str] | None = None) -> int:
     log.info("Démarrage de %s %s (Python %s)", APP_NAME, __version__, sys.version.split()[0])
 
     from lsfcars.ui.gl_setup import configure_opengl
+    from lsfcars.ui.settings import AppSettings
 
-    configure_opengl(software=args.software_gl)
+    settings = AppSettings()
+    configure_opengl(software=args.software_gl or settings.software_gl)
+    if settings.blender_path:
+        from lsfcars.importers.fbx_blender import set_blender_path
 
+        set_blender_path(settings.blender_path)
+
+    from PySide6.QtCore import QTimer
     from PySide6.QtGui import QIcon
     from PySide6.QtWidgets import QApplication
 
@@ -64,14 +71,16 @@ def main(argv: Sequence[str] | None = None) -> int:
     if icon_path.is_file():
         app.setWindowIcon(QIcon(str(icon_path)))
 
+    from lsfcars.ui.design import apply_design
     from lsfcars.ui.main_window import MainWindow
-    from lsfcars.ui.theme import apply_theme
 
-    apply_theme(app)
-    window = MainWindow()
+    apply_design(app, compact=settings.compact)
+    window = MainWindow(settings)
     window.show()
     if args.project:
         window.open_project(args.project)
+    elif args.smoke_test is None:
+        QTimer.singleShot(400, window.check_recovery)
 
     if args.smoke_test is not None:
         return _run_smoke_test(app, window, args.smoke_test)
@@ -83,31 +92,33 @@ def _run_smoke_test(app: QApplication, window: MainWindow, delay_ms: int) -> int
 
     Code de retour 0 si le rendu OpenGL a fonctionné, ``EXIT_SMOKE_GL_FAILED`` sinon.
     """
+    import tempfile
+
     from PySide6.QtCore import QTimer
 
-    from lsfcars.scene.loader import load_meshes
-    from lsfcars.scene.mesh import combined_bounds
-    from lsfcars.ui.main_window import MODE_3D
+    from lsfcars.project.session import ProjectSession
 
     log = get_logger("smoke")
-    window.set_mode(MODE_3D)
-    meshes = load_meshes(samples_dir() / "vehicule_test.glb")
-    window.viewport.set_object("smoke-test", meshes)
-    window.viewport.frame_bounds(combined_bounds(meshes))
+    session = ProjectSession.create(tempfile.mkdtemp(prefix="lsfcars-smoke-"), "Test")
+    session.import_model(samples_dir() / "vehicule_test.glb")
+    window.controller.set_session(session)
+    window.navigate("studio")
+    viewport = window.studio.viewport
     result = {"code": EXIT_SMOKE_GL_FAILED}
 
     def finish() -> None:
-        image = window.viewport.grabFramebuffer()
-        ok = window.viewport.gl_ready and not image.isNull()
+        image = viewport.grabFramebuffer()
+        ok = viewport.gl_ready and not image.isNull()
         log.info(
-            "Test de démarrage : OpenGL %s, image %dx%d",
-            "OK" if window.viewport.gl_ready else "INDISPONIBLE",
+            "Test de démarrage : OpenGL %s, image %dx%d, %d nœuds",
+            "OK" if viewport.gl_ready else "INDISPONIBLE",
             image.width(),
             image.height(),
+            len(session.scene),
         )
         log.info("\n%s", diagnostics.format_report())
         result["code"] = 0 if ok else EXIT_SMOKE_GL_FAILED
-        window.viewport.remove_object("smoke-test")
+        session.stack.mark_clean()
         window.close()
         app.quit()
 

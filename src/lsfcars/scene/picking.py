@@ -18,8 +18,13 @@ def ray_from_screen(
     width, height = max(width, 1), max(height, 1)
     ndc_x = 2.0 * x / width - 1.0
     ndc_y = 1.0 - 2.0 * y / height
-    tan_half = math.tan(math.radians(camera.fov_y) / 2.0)
     right, up, forward = camera.basis()
+    if getattr(camera, "orthographic", False):
+        half_h = camera.half_height()
+        offset = right * ndc_x * half_h * (width / height) + up * ndc_y * half_h
+        origin = camera.eye() + offset - forward * camera.distance * 50.0
+        return origin, forward / np.linalg.norm(forward)
+    tan_half = math.tan(math.radians(camera.fov_y) / 2.0)
     direction = forward + right * ndc_x * tan_half * (width / height) + up * ndc_y * tan_half
     return camera.eye(), direction / np.linalg.norm(direction)
 
