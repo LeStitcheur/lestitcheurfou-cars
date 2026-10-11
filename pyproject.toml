@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lestitcheurfou-cars"
+description = "LeStitcheurFou Cars — atelier Windows de création et d'adaptation de véhicules pour FiveM."
+readme = "README.md"
+dynamic = ["version"]
+requires-python = ">=3.12"
+authors = [{ name = "LeStitcheur" }]
+dependencies = [
+    "PySide6-Essentials>=6.8",
+    "PyOpenGL>=3.1.7",
+    "numpy>=1.26",
+    "trimesh>=4.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-qt>=4.4",
+    "ruff>=0.6",
+    "pyinstaller>=6.10",
+]
+
+[project.gui-scripts]
+lestitcheurfou-cars = "lsfcars.app:main"
+
+[tool.setuptools.dynamic]
+version = { attr = "lsfcars.__version__" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+qt_api = "pyside6"
+addopts = "-ra"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM"]

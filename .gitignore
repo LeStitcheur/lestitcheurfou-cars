@@ -1,0 +1,59 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+.venv/
+venv/
+.python-version
+
+# --- Outils / tests ---
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+pytest-report.xml
+
+# --- Build / PyInstaller ---
+build/
+dist/
+
+# --- IDE / OS ---
+.vscode/
+.idea/
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# --- Secrets : ne jamais versionner ---
+.env
+.env.*
+!.env.example
+secrets/
+*.key
+*.pem
+
+# --- Fichiers propriétaires GTA V / Rockstar : ne jamais versionner ---
+*.rpf
+*.yft
+*.ytd
+*.ydr
+*.ydd
+*.yld
+*.ycd
+*.ymap
+*.ytyp
+
+# --- Projets et données utilisateur locaux ---
+*.lsfc
+*.lsfc-journal
+/projets/
+/logs/
+
+# --- Modèles IA (poids volumineux ou sous licence) ---
+*.safetensors
+*.ckpt
+*.onnx
+*.gguf
+/models/
