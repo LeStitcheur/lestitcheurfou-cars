@@ -29,6 +29,7 @@ from PySide6.QtWidgets import (
 )
 
 from lsfcars.scene.graph import NodeKind, SceneNode
+from lsfcars.scene.material_presets import GTA_SHADER_DISCLAIMER, PRESETS
 from lsfcars.scene.materials import Material
 from lsfcars.scene.transform import Transform
 from lsfcars.ui.design import icons
@@ -53,7 +54,12 @@ from lsfcars.ui.panels.log_panel import LogPanel
 from lsfcars.ui.studio.controller import StudioController
 
 ID_ROLE = Qt.ItemDataRole.UserRole
-KIND_ICONS = {NodeKind.MODEL: "car", NodeKind.GROUP: "layers", NodeKind.MESH: "cuboid"}
+KIND_ICONS = {
+    NodeKind.MODEL: "car",
+    NodeKind.GROUP: "layers",
+    NodeKind.MESH: "cuboid",
+    NodeKind.ANCHOR: "frame",
+}
 _serials = itertools.count(1)
 
 
@@ -446,7 +452,35 @@ class MaterialEditor(QWidget):
         texture_row.addWidget(self.texture_label, 1)
         texture_row.addWidget(choose)
         texture_row.addWidget(self.clear_texture)
+        self.preset = LSSelect([("Preset automobile…", "")] + [(p.label, p.key) for p in PRESETS])
+        self.preset.activated.connect(self._apply_preset)
+        tooltip(self.preset, "Applique un preset original (valeurs indicatives) au matériau choisi")
+        normal_row = QHBoxLayout()
+        self.normal_label = label("Aucune", "muted", wrap=True)
+        choose_normal = LSButton("Choisir…", "secondary", "image", True)
+        choose_normal.clicked.connect(self._choose_normal)
+        self.clear_normal = LSIconButton("x", "Retirer la carte de normales", size=14)
+        self.clear_normal.clicked.connect(lambda: self.set_properties({"normal_texture": None}))
+        normal_row.addWidget(self.normal_label, 1)
+        normal_row.addWidget(choose_normal)
+        normal_row.addWidget(self.clear_normal)
+        self.normal_strength = _Slider("Intensité de la carte de normales (0 à 2)")
+        self.normal_strength.slider.setRange(0, 200)
+        self.normal_strength.slider.valueChanged.connect(
+            lambda v: self.set_properties({"normal_strength": v / 100.0}, live=True)
+        )
+        self.normal_strength.slider.sliderReleased.connect(self._next_serial)
+        self.uv_scale = LSPropertyField("Échelle UV", 2, 0.01, 100, 0.1, 3)
+        self.uv_offset = LSPropertyField("Décalage UV", 2, -100, 100, 0.05, 3)
+        for field_name, widget in (("uv_scale", self.uv_scale), ("uv_offset", self.uv_offset)):
+            widget.value_changed.connect(
+                lambda v, f=field_name: self.set_properties({f: tuple(v)}, live=True)
+            )
+            widget.edit_finished.connect(lambda _v: self._next_serial())
+        self.gta_shader = label("—", "muted", wrap=True)
+        tooltip(self.gta_shader, GTA_SHADER_DISCLAIMER)
         for title, widget in (
+            ("Preset", self.preset),
             ("Nom", self.name),
             ("Couleur", self.color_button),
             ("Rugosité", self.roughness),
@@ -455,6 +489,11 @@ class MaterialEditor(QWidget):
         ):
             form.addRow(label(title, "muted"), widget)
         form.addRow(label("Texture", "muted"), texture_row)
+        form.addRow(label("Normales", "muted"), normal_row)
+        form.addRow(label("Intensité", "muted"), self.normal_strength)
+        form.addRow(self.uv_scale)
+        form.addRow(self.uv_offset)
+        form.addRow(label("Shader GTA V", "muted"), self.gta_shader)
         self.form_widget = QWidget()
         self.form_widget.setLayout(form)
         layout.addWidget(self.form_widget)
@@ -517,6 +556,17 @@ class MaterialEditor(QWidget):
         self.opacity.set_value(material.opacity)
         self.texture_label.setText(material.texture.split("/")[-1] if material.texture else "Aucune")
         self.clear_texture.setEnabled(bool(material.texture))
+        self.normal_label.setText(
+            material.normal_texture.split("/")[-1] if material.normal_texture else "Aucune"
+        )
+        self.clear_normal.setEnabled(bool(material.normal_texture))
+        self.normal_strength.slider.setValue(int(round(material.normal_strength * 100)))
+        self.uv_scale.set_value(material.uv_scale)
+        self.uv_offset.set_value(material.uv_offset)
+        self.preset.setCurrentIndex(max(self.preset.findData(material.preset), 0))
+        self.gta_shader.setText(
+            f"{material.gta_shader} (suggestion indicative)" if material.gta_shader else "Non défini"
+        )
         users = len(session.scene.material_users(material.id)) if session else 0
         self.users.setText(f"Utilisé par {users} maillage(s)")
         self._updating = False
@@ -563,6 +613,29 @@ class MaterialEditor(QWidget):
         )
         if path:
             session.set_texture(material.id, path)
+
+    def _apply_preset(self) -> None:
+        material, key = self.material(), self.preset.currentData()
+        editor = self.controller.editor
+        if not key or editor is None:
+            return
+        if material is None:  # aucun matériau : on en crée un pour la sélection
+            self.controller.run(
+                "Preset", lambda: editor.apply_material_preset(self.controller.selected(), key)
+            )
+        else:
+            self.controller.run("Preset", lambda: editor.apply_material_preset([], key, material.id))
+        self.refresh()
+
+    def _choose_normal(self) -> None:
+        material, session = self.material(), self.controller.session
+        if material is None or session is None:
+            return
+        path, _ = QFileDialog.getOpenFileName(
+            self, "Choisir une carte de normales", "", "Images (*.png *.jpg *.jpeg *.bmp *.tga)"
+        )
+        if path:
+            session.set_normal_texture(material.id, path)
 
     def _new_material(self, copy: bool = False) -> None:
         session = self.controller.session

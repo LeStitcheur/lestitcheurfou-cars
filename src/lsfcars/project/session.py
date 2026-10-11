@@ -48,6 +48,7 @@ class ProjectSession:
         self.selection = Selection()
         self._meta_dirty = False
         self.stack.subscribe(lambda _c, _a: self.selection.prune(self.scene))
+        self.stack.subscribe(lambda _c, _a: self.prune_geometry())
 
     # --- Cycle de vie -------------------------------------------------------
     @classmethod
@@ -146,9 +147,25 @@ class ProjectSession:
         log.info("Modèle v0.1 développé : %s (%d nœuds)", model.name, len(snapshots))
 
     def geometry_for(self, node: SceneNode) -> MeshData | None:
-        if node.kind is not NodeKind.MESH or not node.asset_id or not node.mesh_key:
+        if node.kind is not NodeKind.MESH or not node.mesh_key:
             return None
+        if node.asset_id is None:  # géométrie locale (modifiée, créée, bibliothèque)
+            return self.scene.meshes.get(node.mesh_key)
         return self.geometry.get((node.asset_id, node.mesh_key))
+
+    def prune_geometry(self) -> int:
+        """Libère la géométrie locale qui n'est plus utilisée ni par la scène ni par l'historique."""
+        return self.scene.prune_meshes(self.stack.referenced_mesh_keys())
+
+    def memory_report(self) -> dict[str, int]:
+        """Mémoire de géométrie (octets) : fichiers importés, géométrie locale, historique."""
+        from lsfcars.scene.commands import mesh_bytes
+
+        return {
+            "imported": sum(mesh_bytes(m) for m in self.geometry.values()),
+            "local": sum(mesh_bytes(m) for m in self.scene.meshes.values()),
+            "history": self.stack.memory_used(),
+        }
 
     # --- Import -------------------------------------------------------------
     @staticmethod
@@ -434,3 +451,8 @@ class ProjectSession:
     def set_texture(self, material_id: str, image_path: str | Path | None) -> None:
         texture = store.copy_texture(self.project, image_path) if image_path else None
         self.set_material_properties(material_id, {"texture": texture})
+
+    def set_normal_texture(self, material_id: str, image_path: str | Path | None) -> None:
+        """Carte de normales (espace tangent) copiée dans le projet, original intact."""
+        texture = store.copy_texture(self.project, image_path) if image_path else None
+        self.set_material_properties(material_id, {"normal_texture": texture})

@@ -49,6 +49,23 @@ Ne pas utiliser `NoButtons` sur les QDoubleSpinBox (valeur invisible avec la feu
   facultatifs via `LSFCARS_REAL_RESOURCE`.
 - Détails et tableau de compatibilité : `docs/FIVEM_IMPORT.md`.
 
+## Vehicle Editor (v0.4)
+
+- `scene/editmesh.py` : édition de maillage pure numpy (topologie soudée, sélections, opérations) ;
+  chaque opération retourne un **nouveau** `MeshData` (immuable) et signale ses effets sur les UV.
+- `scene/shapes.py` : formes paramétriques originales (aucun asset tiers).
+- Géométrie locale : `SceneGraph.meshes` + nœud `asset_id=None, mesh_key=<clé>` ; enregistrée
+  dans la table `meshes` du `.lsfc` v4. Les fichiers importés ne sont jamais modifiés.
+- `editor/` (sans Qt) : `operations.py` (`VehicleEditor`, toutes les opérations via l'historique),
+  `vehicle.py` (axes, catégories, rôles, roues, habitacle, ancrages), `library.py`
+  (bibliothèque locale), `compat.py` (avertissements et rapport FiveM), `edit_state.py` (modes),
+  `blender_ops.py` (biseau Blender).
+- `ui/editor/` : panneaux (outils, géométrie, ancrages, ateliers, historique, compatibilité) et
+  bibliothèque / Replace Component. Page : `ui/studio/studio_page.py`.
+- Ne jamais présenter un outil comme disponible si son algorithme ne l'est pas (biseau désactivé
+  sans Blender). Ne jamais promettre la jouabilité FiveM d'un véhicule modifié.
+- Détails : `docs/VEHICLE_EDITOR.md`.
+
 ## Architecture v0.2-v0.3 (src/lsfcars)
 
 - `scene/` : graphe (`graph.py`), transformations, matériaux, historique (`commands.py`),

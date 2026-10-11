@@ -10,6 +10,7 @@ from enum import StrEnum
 import numpy as np
 
 from lsfcars.scene.materials import Material
+from lsfcars.scene.mesh import MeshData
 from lsfcars.scene.transform import Transform
 
 
@@ -17,10 +18,16 @@ class NodeKind(StrEnum):
     GROUP = "group"  # regroupement sans géométrie
     MODEL = "model"  # racine d'un fichier importé
     MESH = "mesh"  # maillage affichable
+    ANCHOR = "anchor"  # point d'ancrage (équipements) : repère sans géométrie
 
     @property
     def label(self) -> str:
-        return {"group": "Groupe", "model": "Modèle importé", "mesh": "Maillage"}[self.value]
+        return {
+            "group": "Groupe",
+            "model": "Modèle importé",
+            "mesh": "Maillage",
+            "anchor": "Point d'ancrage",
+        }[self.value]
 
 
 def new_node_id() -> str:
@@ -34,8 +41,8 @@ class SceneNode:
     transform: Transform = field(default_factory=Transform)
     visible: bool = True
     locked: bool = False
-    asset_id: str | None = None  # fichier importé d'origine
-    mesh_key: str | None = None  # identifiant du maillage dans ce fichier
+    asset_id: str | None = None  # fichier importé d'origine (None : géométrie locale du projet)
+    mesh_key: str | None = None  # maillage dans ce fichier, ou clé de ``SceneGraph.meshes``
     material_id: str | None = None
     parent_id: str | None = None
     id: str = field(default_factory=new_node_id)
@@ -79,12 +86,18 @@ class SceneError(Exception):
 
 
 class SceneGraph:
-    """Nœuds ordonnés par parent, matériaux partagés."""
+    """Nœuds ordonnés par parent, matériaux partagés.
+
+    ``meshes`` : géométrie locale du projet (pièces modifiées, créées ou ajoutées depuis la
+    bibliothèque), enregistrée dans le ``.lsfc``. Ces maillages sont immuables : une édition crée
+    un nouveau maillage, ce qui rend l'annulation triviale (on rebascule la référence).
+    """
 
     def __init__(self) -> None:
         self.nodes: dict[str, SceneNode] = {}
         self._children: dict[str | None, list[str]] = {None: []}
         self.materials: dict[str, Material] = {}
+        self.meshes: dict[str, MeshData] = {}
 
     # --- Lecture ------------------------------------------------------------
     def __contains__(self, node_id: object) -> bool:
@@ -203,6 +216,22 @@ class SceneGraph:
         self.nodes.clear()
         self._children = {None: []}
         self.materials.clear()
+        self.meshes.clear()
+
+    def anchor_nodes(self) -> Iterator[SceneNode]:
+        return (n for n in self.walk() if n.kind is NodeKind.ANCHOR)
+
+    def used_mesh_keys(self) -> set[str]:
+        """Clés de géométrie locale référencées par au moins un nœud."""
+        return {n.mesh_key for n in self.nodes.values() if n.asset_id is None and n.mesh_key}
+
+    def prune_meshes(self, keep: set[str] | None = None) -> int:
+        """Retire la géométrie locale qui n'est plus référencée (ni par la scène, ni par ``keep``)."""
+        alive = self.used_mesh_keys() | (keep or set())
+        dead = [k for k in self.meshes if k not in alive]
+        for key in dead:
+            del self.meshes[key]
+        return len(dead)
 
     def add_material(self, material: Material) -> Material:
         self.materials[material.id] = material

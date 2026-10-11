@@ -31,7 +31,8 @@ from lsfcars.ui.design import tokens
 log = get_logger(__name__)
 
 # Constantes OpenGL (PySide6 ne les expose pas).
-GL_LINES, GL_TRIANGLES = 0x0001, 0x0004
+GL_POINTS, GL_LINES, GL_TRIANGLES = 0x0000, 0x0001, 0x0004
+GL_PROGRAM_POINT_SIZE = 0x8642
 GL_UNSIGNED_BYTE, GL_UNSIGNED_INT, GL_FLOAT = 0x1401, 0x1405, 0x1406
 GL_DEPTH_TEST, GL_BLEND, GL_MULTISAMPLE = 0x0B71, 0x0BE2, 0x809D
 GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA = 0x0302, 0x0303
@@ -46,13 +47,14 @@ ATTR_POSITION, ATTR_NORMAL, ATTR_COLOR, ATTR_UV = 0, 1, 2, 3
 MESH_VS = """
 in vec3 aPos; in vec3 aNormal; in vec4 aColor; in vec2 aUV;
 uniform mat4 uModel; uniform mat4 uView; uniform mat4 uProj; uniform mat4 uNormalMat;
+uniform vec2 uUVScale; uniform vec2 uUVOffset;
 out vec3 vNormal; out vec3 vViewPos; out vec4 vColor; out vec2 vUV; out vec3 vWorldNormal;
 void main() {
     vec4 viewPos = uView * uModel * vec4(aPos, 1.0);
     vViewPos = viewPos.xyz;
     vWorldNormal = mat3(uNormalMat) * aNormal;
     vNormal = mat3(uView) * vWorldNormal;
-    vColor = aColor; vUV = aUV;
+    vColor = aColor; vUV = aUV * uUVScale + uUVOffset;
     gl_Position = uProj * viewPos;
 }
 """
@@ -61,11 +63,23 @@ MESH_FS = """
 in vec3 vNormal; in vec3 vViewPos; in vec4 vColor; in vec2 vUV; in vec3 vWorldNormal;
 uniform vec4 uBaseColor; uniform float uRough; uniform float uMetal; uniform float uAlpha;
 uniform float uUseTexture; uniform sampler2D uTex; uniform float uMode; uniform float uHighlight;
+uniform float uUseNormal; uniform sampler2D uNormalTex; uniform float uNormalStrength; uniform vec3 uAccent;
 out vec4 fragColor;
+vec3 perturb(vec3 n, vec3 p, vec2 uv) {  // repère tangent par dérivées écran (sans tangentes stockées)
+    vec3 dp1 = dFdx(p); vec3 dp2 = dFdy(p); vec2 duv1 = dFdx(uv); vec2 duv2 = dFdy(uv);
+    vec3 dp2perp = cross(dp2, n); vec3 dp1perp = cross(n, dp1);
+    vec3 t = dp2perp * duv1.x + dp1perp * duv2.x;
+    vec3 b = dp2perp * duv1.y + dp1perp * duv2.y;
+    float scale = inversesqrt(max(max(dot(t, t), dot(b, b)), 1e-20));
+    vec3 m = texture(uNormalTex, uv).xyz * 2.0 - 1.0;
+    m.xy *= uNormalStrength;
+    return normalize(mat3(t * scale, b * scale, n) * m);
+}
 void main() {
     if (uMode > 1.5) { fragColor = vec4(uBaseColor.rgb, 1.0); return; }  // gizmo : couleur plate
     vec3 n = normalize(vNormal);
     if (!gl_FrontFacing) n = -n;
+    if (uUseNormal > 0.5 && uMode > 0.5) n = perturb(n, vViewPos, vUV);
     vec3 v = normalize(-vViewPos);
     vec3 albedo;
     float alpha = 1.0;
@@ -96,20 +110,20 @@ void main() {
                + albedo * metal * 0.25 * (diff + fill);
     float rim = pow(1.0 - max(dot(n, v), 0.0), 3.0);
     color += vec3(0.04, 0.09, 0.16) * rim;  // liseré froid du studio (bleu)
-    vec3 accent = vec3(1.0, 0.30, 0.38);
-    color = mix(color, color * 0.75 + accent * (0.18 + 0.75 * rim), uHighlight * 0.55);
+    color = mix(color, color * 0.75 + uAccent * (0.18 + 0.75 * rim), uHighlight * 0.55);
     fragColor = vec4(color, alpha);
 }
 """
 
 LINE_VS = """
 in vec3 aPos; in vec4 aColor;
-uniform mat4 uModel; uniform mat4 uView; uniform mat4 uProj;
+uniform mat4 uModel; uniform mat4 uView; uniform mat4 uProj; uniform float uPointSize;
 out vec4 vColor; out vec3 vWorld;
 void main() {
     vec4 world = uModel * vec4(aPos, 1.0);
     vWorld = world.xyz; vColor = aColor;
     gl_Position = uProj * uView * world;
+    gl_PointSize = uPointSize;
 }
 """
 
@@ -152,6 +166,7 @@ BACKGROUND_TOP = gl_rgb(tokens.ColorTokens.BG_SECONDARY)
 BACKGROUND_BOTTOM = gl_rgb(tokens.ColorTokens.BG_MAIN)
 AXIS_COLORS = {0: gl_rgb(tokens.AXIS_X), 1: gl_rgb(tokens.AXIS_Y), 2: gl_rgb(tokens.AXIS_Z)}
 HOVER_COLOR = gl_rgb(tokens.ColorTokens.ELECTRIC)
+ACCENT_COLOR = gl_rgb(tokens.ColorTokens.ELECTRIC)  # surbrillance de la sélection (bleu électrique)
 SELECTION_EDGE = (*gl_rgb(tokens.ColorTokens.ELECTRIC), 0.95)
 WIRE_COLOR = (*gl_rgb(tokens.ColorTokens.TEXT_SECONDARY), 0.85)
 GRID_MINOR = (*gl_rgb(tokens.ColorTokens.TEXT_SECONDARY), 0.14)
@@ -168,6 +183,25 @@ class DrawItem:
     opacity: float = 1.0
     texture: Path | None = None
     selected: bool = False
+    normal_texture: Path | None = None
+    normal_strength: float = 1.0
+    uv_scale: tuple[float, float] = (1.0, 1.0)
+    uv_offset: tuple[float, float] = (0.0, 0.0)
+
+
+@dataclass
+class Overlay:
+    """Superposition en coordonnées monde : points, segments et triangles colorés (N, 7).
+
+    Mode Édition (sommets, arêtes, faces sélectionnées) et repères des points d'ancrage.
+    ``xray`` : dessiné par-dessus la géométrie (sans test de profondeur).
+    """
+
+    points: np.ndarray | None = None
+    lines: np.ndarray | None = None
+    triangles: np.ndarray | None = None
+    point_size: float = 6.0
+    xray: bool = False
 
 
 @dataclass
@@ -193,6 +227,7 @@ class FrameData:
     grid_center: np.ndarray = field(default_factory=lambda: np.zeros(3))
     grid_radius: float = 40.0
     gizmo: GizmoDraw | None = None
+    overlays: list[Overlay] = field(default_factory=list)
 
 
 def _qmatrix(m: np.ndarray) -> QMatrix4x4:
@@ -490,10 +525,38 @@ class Renderer:
                 gpu.edge_vao.release()
         fn.glDepthFunc(GL_LESS)
 
+        for overlay in frame.overlays:
+            self._draw_overlay(overlay, view, proj)
         if frame.gizmo is not None:
             self._draw_gizmo(frame.gizmo, view, proj)
         self._draw_axis_indicator(frame, full)
         self.last_frame_ms = (time.perf_counter() - start) * 1000.0
+
+    def _draw_overlay(self, overlay: Overlay, view: QMatrix4x4, proj: QMatrix4x4) -> None:
+        """Superposition dynamique : tampons créés pour l'image puis libérés."""
+        fn = self._fn
+        if overlay.xray:
+            fn.glDisable(GL_DEPTH_TEST)
+        else:
+            fn.glDepthFunc(GL_LEQUAL)
+        fn.glDepthMask(GL_FALSE)
+        fn.glEnable(GL_PROGRAM_POINT_SIZE)
+        for data, mode in (
+            (overlay.triangles, GL_TRIANGLES),
+            (overlay.lines, GL_LINES),
+            (overlay.points, GL_POINTS),
+        ):
+            if data is None or not len(data):
+                continue
+            gpu = self._upload_lines(np.ascontiguousarray(data, np.float32))
+            self._line_uniforms(view, proj, np.eye(4), None)
+            self._line_prog.setUniformValue1f("uPointSize", float(overlay.point_size))
+            self._draw_arrays(gpu, mode)
+            gpu.destroy()
+        self._line_prog.setUniformValue1f("uPointSize", 1.0)
+        fn.glDepthMask(GL_TRUE)
+        fn.glDepthFunc(GL_LESS)
+        fn.glEnable(GL_DEPTH_TEST)
 
     def _draw_arrays(self, gpu: _Gpu | None, mode: int) -> None:
         if gpu is not None:
@@ -533,13 +596,24 @@ class Renderer:
         prog.setUniformValue1f("uMetal", float(item.metallic))
         prog.setUniformValue1f("uAlpha", float(item.opacity))
         prog.setUniformValue1f("uHighlight", 1.0 if item.selected else 0.0)
+        prog.setUniformValue("uAccent", *ACCENT_COLOR)
+        prog.setUniformValue("uUVScale", float(item.uv_scale[0]), float(item.uv_scale[1]))
+        prog.setUniformValue("uUVOffset", float(item.uv_offset[0]), float(item.uv_offset[1]))
         texture = self._texture(item.texture)
         prog.setUniformValue1f("uUseTexture", 1.0 if texture is not None else 0.0)
         if texture is not None:
             texture.bind(0)
+        normal = self._texture(item.normal_texture)
+        prog.setUniformValue1i("uNormalTex", 1)
+        prog.setUniformValue1f("uUseNormal", 1.0 if normal is not None else 0.0)
+        prog.setUniformValue1f("uNormalStrength", float(item.normal_strength))
+        if normal is not None:
+            normal.bind(1)
         gpu.vao.bind()
         self._fn.glDrawElements(GL_TRIANGLES, gpu.count, GL_UNSIGNED_INT, shiboken6.VoidPtr(0))
         gpu.vao.release()
+        if normal is not None:
+            normal.release(1)
         if texture is not None:
             texture.release()
 

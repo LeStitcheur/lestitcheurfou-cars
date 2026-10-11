@@ -1,4 +1,44 @@
-# Guide utilisateur — LeStitcheurFou Cars 0.3.0
+# Guide utilisateur — LeStitcheurFou Cars 0.4.0
+
+## Nouveautés 0.4 : Vehicle Editor
+
+Référence complète : [VEHICLE_EDITOR.md](VEHICLE_EDITOR.md).
+
+1. Ouvrez un projet et importez un véhicule (GLB, OBJ, FBX, ou ressource FiveM via le Vehicle
+   Import Studio). La page **Vehicle Editor** s'ouvre.
+2. **Choisir un mode** (en-tête du viewport) : **Objet** (déplacer, pivoter, dupliquer,
+   grouper…), **Édition** (Tab : modifier les sommets, arêtes et faces du maillage
+   sélectionné), **Composant** (un clic sélectionne la pièce entière : roue, porte…).
+3. **Modifier la géométrie** (mode Édition, onglet de gauche **Outils**) :
+   - choisissez Sommets, Arêtes ou Faces, puis cliquez dans le viewport (Maj : ajouter,
+     Ctrl : basculer, A : tout) ;
+   - déplacez la sélection avec le gizmo (W / E / R) ;
+   - utilisez Extruder, Inset, Biseau (avec Blender), Fusionner, Séparer, Symétrie (aperçu
+     puis Valider) ou Projection UV automatique.
+
+   Le fichier importé n'est jamais modifié : la pièce modifiée est enregistrée dans le projet.
+4. **Ajouter une pièce** : onglet **Bibliothèque** (recherche, catégories, aperçu), double-clic
+   ou « Ajouter au véhicule ». « Preset » enregistre une pièce du projet dans la bibliothèque.
+5. **Remplacer une pièce** : sélectionnez-la, puis « Remplacer… ». Choisissez la nouvelle
+   pièce et les options, **Prévisualiser**, puis **Confirmer** (Ctrl+Z restaure l'ancienne).
+6. **Ateliers** (en-tête) :
+   - **Bodywork Studio** : pièces de carrosserie, proportions, miroir ;
+   - **Wheel Editor** : voie, empattement, hauteurs, jantes, pivots, aperçu de rotation ;
+   - **Interior Studio** : habitacle isolé, carrosserie masquée, caméra intérieure,
+     configurations police / EMS.
+
+   Réglez d'abord le sens de l'avant du véhicule dans **Outils** (mode Objet), rubrique
+   « Axes du véhicule ».
+7. **Points d'ancrage** : onglet **Ancrages** (à droite), puis type, contraintes, métadonnées et
+   « Créer ». Les axes s'affichent dans le viewport.
+8. **Matériaux** : onglet Propriétés → Matériau. Presets automobiles, carte de normales, UV.
+9. En bas :
+   - **Historique** : double-clic pour revenir à une étape ; points de restauration ;
+   - **Compatibilité FiveM** : rapport technique, sans garantie de jouabilité.
+10. Enregistrez avec Ctrl+S : géométrie modifiée, pièces ajoutées, ancrages, variantes,
+    matériaux et réglages sont conservés.
+
+# Guide 0.3.0
 
 ## Nouveautés 0.3 : Vehicle Import Studio
 

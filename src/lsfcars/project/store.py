@@ -1,4 +1,4 @@
-"""Persistance des projets dans un fichier SQLite ``.lsfc`` (format version 3).
+"""Persistance des projets dans un fichier SQLite ``.lsfc`` (format version 4).
 
 Structure sur disque ::
 
@@ -10,11 +10,18 @@ Structure sur disque ::
 
 Format 3 : ajoute la table ``resources`` (provenance et manifeste versionné des ressources
 FiveM) et la colonne ``nodes.extra`` (métadonnées d'origine : os, étiquette, pivot…).
+
+Format 4 (v0.4) : table ``meshes`` (géométrie locale : pièces modifiées, créées ou ajoutées
+depuis la bibliothèque, compressée en npz), colonne ``materials.extra`` (carte de normales, UV,
+preset, shader GTA V indicatif) et réglages de l'éditeur dans ``meta.editor``. Les points
+d'ancrage sont des nœuds de type ``anchor`` ; variantes et rôles de composants sont dans
+``nodes.extra``.
 """
 
 from __future__ import annotations
 
 import hashlib
+import io
 import json
 import os
 import re
@@ -23,6 +30,8 @@ import sqlite3
 from contextlib import closing
 from dataclasses import dataclass
 from pathlib import Path
+
+import numpy as np
 
 from lsfcars import APP_ID, __version__
 from lsfcars.core.logging_setup import get_logger
@@ -36,14 +45,15 @@ from lsfcars.project.model import (
     utc_now_iso,
 )
 from lsfcars.scene.graph import NodeKind, SceneGraph, SceneNode
-from lsfcars.scene.materials import Material
+from lsfcars.scene.materials import EXTRA_FIELDS, Material
+from lsfcars.scene.mesh import MeshData
 from lsfcars.scene.transform import Transform
 
 log = get_logger(__name__)
 
 PROJECT_EXTENSION = ".lsfc"
 FORMAT_ID = APP_ID
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 
 _SCHEMA = """
 CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
@@ -54,7 +64,8 @@ CREATE TABLE assets (
 );
 CREATE TABLE materials (
     id TEXT PRIMARY KEY, name TEXT NOT NULL, base_color TEXT NOT NULL, roughness REAL NOT NULL,
-    metallic REAL NOT NULL, opacity REAL NOT NULL, texture TEXT, double_sided INTEGER NOT NULL
+    metallic REAL NOT NULL, opacity REAL NOT NULL, texture TEXT, double_sided INTEGER NOT NULL,
+    extra TEXT
 );
 CREATE TABLE nodes (
     id TEXT PRIMARY KEY, parent_id TEXT, position INTEGER NOT NULL, name TEXT NOT NULL,
@@ -66,6 +77,7 @@ CREATE TABLE resources (
     id TEXT PRIMARY KEY, name TEXT NOT NULL, source_path TEXT, source_kind TEXT, status TEXT,
     imported_at TEXT, manifest TEXT NOT NULL
 );
+CREATE TABLE meshes (key TEXT PRIMARY KEY, name TEXT NOT NULL, data BLOB NOT NULL);
 """
 
 _V2_TABLES = ("assets", "materials", "nodes", "thumbnail")
@@ -84,6 +96,35 @@ def safe_folder_name(name: str) -> str:
     if not cleaned:
         raise ProjectError("Le nom du projet est vide ou invalide.")
     return cleaned[:80]
+
+
+def mesh_to_bytes(mesh: MeshData) -> bytes:
+    """Géométrie locale → npz compressé (positions, indices, normales, couleurs, UV)."""
+    arrays = {
+        "positions": mesh.positions,
+        "indices": mesh.indices,
+        "normals": mesh.normals,
+        "colors": mesh.colors,
+        "color": np.asarray(mesh.color, np.float32),
+    }
+    if mesh.uvs is not None:
+        arrays["uvs"] = mesh.uvs
+    buffer = io.BytesIO()
+    np.savez_compressed(buffer, **arrays)
+    return buffer.getvalue()
+
+
+def mesh_from_bytes(name: str, data: bytes) -> MeshData:
+    with np.load(io.BytesIO(data), allow_pickle=False) as npz:
+        return MeshData(
+            name,
+            npz["positions"],
+            npz["indices"],
+            npz["normals"],
+            npz["colors"],
+            tuple(float(c) for c in npz["color"]),
+            npz["uvs"] if "uvs" in npz.files else None,
+        )
 
 
 def sha256_of(path: Path) -> str:
@@ -167,6 +208,7 @@ def save_project(project: Project, path: str | Path | None = None) -> Path:
         "created_at": project.created_at,
         "updated_at": project.updated_at,
         "camera": json.dumps(project.camera) if project.camera else "",
+        "editor": json.dumps(project.editor) if project.editor else "",
     }
     scene = project.scene
     node_rows = [
@@ -200,9 +242,12 @@ def save_project(project: Project, path: str | Path | None = None) -> Path:
             m.opacity,
             m.texture,
             int(m.double_sided),
+            json.dumps(m.extra_dict()),
         )
         for m in scene.materials.values()
     ]
+    used = scene.used_mesh_keys()
+    mesh_rows = [(k, m.name, mesh_to_bytes(m)) for k, m in scene.meshes.items() if k in used]
     try:
         with closing(sqlite3.connect(tmp)) as conn:
             conn.executescript(_SCHEMA)
@@ -212,7 +257,8 @@ def save_project(project: Project, path: str | Path | None = None) -> Path:
                 "INSERT INTO assets VALUES (?,?,?,?,?,?,?,?,?,?)",
                 [a.to_row() for a in project.assets.values()],
             )
-            conn.executemany("INSERT INTO materials VALUES (?,?,?,?,?,?,?,?)", material_rows)
+            conn.executemany("INSERT INTO materials VALUES (?,?,?,?,?,?,?,?,?)", material_rows)
+            conn.executemany("INSERT INTO meshes VALUES (?,?,?)", mesh_rows)
             conn.executemany("INSERT INTO nodes VALUES (?,?,?,?,?,?,?,?,?,?,?,?)", node_rows)
             conn.executemany("INSERT INTO resources VALUES (?,?,?,?,?,?,?)", resource_rows)
             if project.thumbnail:
@@ -281,7 +327,19 @@ def _migrate_v2(conn: sqlite3.Connection) -> None:
     conn.execute("UPDATE meta SET value = '3' WHERE key = 'schema_version'")
 
 
-_MIGRATIONS = {1: _migrate_v1, 2: _migrate_v2}
+def _migrate_v3(conn: sqlite3.Connection) -> None:
+    """v3 → v4 : géométrie locale (table ``meshes``) et champs étendus des matériaux."""
+    columns = {row[1] for row in conn.execute("PRAGMA table_info(materials)")}
+    if "extra" not in columns:
+        conn.execute("ALTER TABLE materials ADD COLUMN extra TEXT")
+    tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+    if "meshes" not in tables:
+        statement = next(s for s in _SCHEMA.split(";") if s.strip().startswith("CREATE TABLE meshes "))
+        conn.execute(statement)
+    conn.execute("UPDATE meta SET value = '4' WHERE key = 'schema_version'")
+
+
+_MIGRATIONS = {1: _migrate_v1, 2: _migrate_v2, 3: _migrate_v3}
 
 
 def load_project(path: str | Path) -> Project:
@@ -314,9 +372,21 @@ def load_project(path: str | Path) -> Project:
             nodes = conn.execute("SELECT * FROM nodes ORDER BY position").fetchall()
             thumb = conn.execute("SELECT png FROM thumbnail WHERE id = 1").fetchone()
             resource_rows = conn.execute("SELECT * FROM resources").fetchall()
+            mesh_rows = conn.execute("SELECT key, name, data FROM meshes").fetchall()
     except (sqlite3.DatabaseError, ValueError) as exc:
         raise ProjectError(f"« {path.name} » est illisible ou corrompu : {exc}") from exc
     project = _build_project(path, meta, assets, materials, nodes, thumb[0] if thumb else None)
+    for key, name, data in mesh_rows:
+        try:
+            project.scene.meshes[key] = mesh_from_bytes(name, data)
+        except (OSError, ValueError, KeyError) as exc:
+            log.warning("Géométrie locale « %s » illisible : %s", name, exc)
+    if meta.get("editor"):
+        try:
+            editor = json.loads(meta["editor"])
+            project.editor = editor if isinstance(editor, dict) else {}
+        except json.JSONDecodeError:
+            log.warning("Réglages de l'éditeur illisibles dans %s, ignorés", path.name)
     for rid, name, source_path, source_kind, status, imported_at, manifest in resource_rows:
         try:
             parsed = json.loads(manifest)
@@ -361,14 +431,14 @@ def _build_project(
         except json.JSONDecodeError:
             log.warning("État de caméra illisible dans %s, ignoré", path.name)
     scene = SceneGraph()
-    for mid, name, base_color, roughness, metallic, opacity, texture, double_sided in material_rows:
+    for mid, name, base_color, roughness, metallic, opacity, texture, double_sided, extra in material_rows:
         try:
             color = tuple(json.loads(base_color))
         except (json.JSONDecodeError, TypeError):
             color = (0.72, 0.74, 0.78, 1.0)
-        scene.add_material(
-            Material(name, color, roughness, metallic, opacity, texture, bool(double_sided), mid)
-        )
+        material = Material(name, color, roughness, metallic, opacity, texture, bool(double_sided), mid)
+        material.apply({k: v for k, v in _extra(extra).items() if k in EXTRA_FIELDS})
+        scene.add_material(material)
     # Parents avant enfants : on insère par vagues (les lignes sont triées par rang).
     pending = list(node_rows)
     while pending:

@@ -100,7 +100,7 @@ def screens(width: int, height: int, scale: str) -> None:
         window.controller.select([wheel.id])
         window.studio.viewport.set_tool("translate")
         window.studio.properties.tabs.setCurrentIndex(1)
-        QTimer.singleShot(500, lambda: (grab("studio_3d"), step_material()))
+        QTimer.singleShot(500, lambda: (grab("vehicle_editor"), step_material()))
 
     def step_material() -> None:
         session = window.controller.session
@@ -108,9 +108,67 @@ def screens(width: int, height: int, scale: str) -> None:
         window.controller.select([body.id])
         window.studio.viewport.set_tool("rotate")
         window.studio.properties.tabs.setCurrentIndex(2)
-        QTimer.singleShot(500, lambda: (grab("materiaux"), step_import()))
+        QTimer.singleShot(500, lambda: (grab("materiaux"), step_edit_mode()))
+
+    def step_edit_mode() -> None:
+        from lsfcars.editor import edit_state as modes
+        from lsfcars.editor.vehicle import VehicleAxes
+        from lsfcars.scene import editmesh
+
+        ctl, studio = window.controller, window.studio
+        ctl.editor.set_axes(VehicleAxes(forward_sign=1))  # modèle d'exemple : avant vers +Z
+        session = ctl.session
+        body = next(n for n in session.scene.walk() if n.name == "caisse")
+        ctl.select([body.id])
+        studio.viewport.set_tool("translate")
+        studio.set_mode(modes.EDIT)
+        mesh = ctl.edit_mesh()
+        top = int(editmesh.face_normals(mesh.positions, mesh.indices)[:, 1].argmax())
+        ctl.edit.set_element(editmesh.FACE, mesh)
+        ctl.edit.select(editmesh.coplanar_faces(mesh, top, 20.0))
+        studio.right.setCurrentWidget(studio.right.widget(1))
+        QTimer.singleShot(500, lambda: (grab("mode_edition"), step_bodywork()))
+
+    def step_bodywork() -> None:
+        from lsfcars.editor import edit_state as modes
+
+        ctl, studio = window.controller, window.studio
+        studio.set_mode(modes.OBJECT)
+        studio.set_workspace("bodywork")
+        spoiler = studio.bodywork.create("lsf-spoiler", "rear")
+        ctl.select([spoiler])
+        studio.left.setCurrentWidget(studio.library)
+        studio.library.category.select_data("spoilers")
+        QTimer.singleShot(600, lambda: (grab("bodywork_bibliotheque"), step_wheels()))
+
+    def step_wheels() -> None:
+        studio = window.studio
+        studio.set_workspace("wheels")
+        studio.wheels.table.selectRow(2)
+        studio.wheels._pick(2, 0)
+        studio.left.setCurrentWidget(studio.explorer)
+        studio.bottom.setCurrentWidget(studio.compat)
+        studio.compat.refresh()
+        QTimer.singleShot(500, lambda: (grab("wheel_editor"), step_interior()))
+
+    def step_interior() -> None:
+        ctl, studio = window.controller, window.studio
+        session = ctl.session
+        body = next(n for n in session.scene.walk() if n.name == "caisse")
+        ctl.select([body.id])
+        studio.anchors.name.setText("Rampe de toit")
+        studio.anchors.type.select_data("roof")
+        studio.anchors.create()
+        studio.set_workspace("interior")
+        studio.interior._create_configs()
+        studio.interior.hide_body.setChecked(True)
+        studio.bottom.setCurrentWidget(studio.history)
+        studio.history.refresh()
+        QTimer.singleShot(500, lambda: (grab("interior_ancrages"), step_import()))
 
     def step_import() -> None:
+        window.studio.interior.hide_body.setChecked(False)
+        window.studio.set_workspace("editor")
         window.navigate("import")
         page = window.import_page
         page.analysis_finished.connect(lambda _ok: QTimer.singleShot(300, step_import_preview))

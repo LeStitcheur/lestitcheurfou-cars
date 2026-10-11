@@ -54,6 +54,29 @@ src/lsfcars/
 └── ui/import_studio/   Vehicle Import Studio (page, panneaux, TaskWorker)
 ```
 
+### Ajouts v0.4 (Vehicle Editor)
+
+```
+src/lsfcars/
+├── scene/editmesh.py   édition de maillage : topologie soudée, sélections, opérations (immuables)
+├── scene/shapes.py     formes paramétriques originales (pièces, roues, habitacle, accessoires)
+├── scene/material_presets.py  presets automobiles, shader GTA V indicatif
+├── editor/             logique du Vehicle Editor, sans Qt
+│   ├── operations.py   VehicleEditor : géométrie, création, miroir, pivots, variantes,
+│   │                   remplacement, ancrages, roues, habitacle, matériaux (via l'historique)
+│   ├── vehicle.py      axes du véhicule, catégories, rôles, roues, habitacle, ancrages
+│   ├── library.py      bibliothèque locale de composants (index JSON + npz)
+│   ├── compat.py       avertissements d'action et rapport de compatibilité FiveM
+│   ├── edit_state.py   modes Objet / Édition / Composant et sélection d'éléments
+│   └── blender_ops.py  biseau via Blender (processus séparé, annulable)
+├── project/restore_points.py  points de restauration nommés
+└── ui/editor/          panneaux du Vehicle Editor, bibliothèque, Replace Component
+```
+
+Principe : une modification de géométrie crée un nouveau `MeshData` rangé dans
+`SceneGraph.meshes` ; la commande `SetGeometry` bascule la référence du nœud. L'annulation est
+donc instantanée ; l'historique a un budget mémoire et la géométrie non référencée est libérée.
+
 ## Format de projet `.lsfc`
 
 Base SQLite, écrite dans un fichier temporaire puis substituée (`os.replace`) : un plantage
@@ -64,12 +87,14 @@ et ne modifie jamais le fichier.
 |---|---|
 | `meta` | `key`, `value` — `format`, `schema_version`, `app_version`, `name`, `vehicle_type`, `role`, `description`, `created_at`, `updated_at` (ISO 8601 UTC), `camera` (JSON) |
 | `assets` | modèles copiés : chemin relatif, nom et chemin d'origine, SHA-256, format, importateur, notes |
-| `materials` | couleur, rugosité, métallicité, opacité, texture, double face |
+| `materials` | couleur, rugosité, métallicité, opacité, texture, double face, `extra` (JSON, format 4 : carte de normales, UV, preset, shader GTA V indicatif) |
 | `nodes` | hiérarchie : parent, rang, nom, type, transformation (JSON), visibilité, verrou, asset, maillage, matériau, `extra` (JSON, format 3 : métadonnées d'origine GTA V) |
 | `resources` | format 3 : ressources FiveM importées — nom, source, type de source, statut, date, `manifest` (JSON versionné) |
+| `meshes` | format 4 : géométrie locale (clé, nom, npz compressé : positions, indices, normales, couleurs, UV) |
 | `thumbnail` | miniature PNG |
 
-Historique : format 1 (v0.1, table `scene_objects`), format 2 (v0.2), format 3 (v0.3).
+Historique : format 1 (v0.1, table `scene_objects`), format 2 (v0.2), format 3 (v0.3), format 4
+(v0.4 : `meshes`, `materials.extra`, `meta.editor`, nœuds `anchor`).
 
 Évolution du schéma : incrémenter `SCHEMA_VERSION` et ajouter le script dans `_MIGRATIONS`
 (`store.py`). Un projet plus récent que le logiciel est refusé avec un message explicite.

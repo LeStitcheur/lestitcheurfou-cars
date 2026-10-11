@@ -142,17 +142,6 @@ class Upcoming:
 
 UPCOMING: tuple[Upcoming, ...] = (
     Upcoming(
-        "library",
-        "Création",
-        "Bibliothèque de composants",
-        "Pièces réutilisables à assembler sur tes véhicules.",
-        (
-            "Jantes, pare-chocs, spoilers, intérieurs",
-            "Catalogue local et favoris",
-            "Glisser-déposer dans le Studio 3D",
-        ),
-    ),
-    Upcoming(
         "liveries",
         "Création",
         "Livrées",

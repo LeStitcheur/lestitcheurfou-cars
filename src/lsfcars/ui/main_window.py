@@ -54,7 +54,6 @@ SAMPLE_PROJECT_NAME = "Démo - Véhicule de test"
 PROJECT_FILTER = f"Projets {APP_NAME} (*{PROJECT_EXTENSION})"
 RESIZE_MARGIN = 6
 UPCOMING_ICONS = {
-    "library": "blocks",
     "liveries": "paint-bucket",
     "lspd": "shield",
     "ems": "ambulance",
@@ -77,7 +76,13 @@ def nav_entries() -> list[NavEntry]:
         NavEntry("dashboard", "Vue d'ensemble", "layout-grid", "Accueil"),
         NavEntry("projects", "Mes projets", "folder", "Accueil"),
         NavEntry("recent", "Projets récents", "history", "Accueil"),
-        NavEntry("studio", "Studio 3D", "cuboid", "Création"),
+        NavEntry(
+            "studio",
+            "Vehicle Editor",
+            "cuboid",
+            "Création",
+            tooltip="Modifier le véhicule : géométrie, carrosserie, roues, habitacle, ancrages",
+        ),
         NavEntry(
             "import",
             "Vehicle Import Studio",
@@ -85,7 +90,13 @@ def nav_entries() -> list[NavEntry]:
             "Création",
             tooltip="Importer et inspecter un véhicule FiveM / GTA V",
         ),
-        soon("library"),
+        NavEntry(
+            "library",
+            "Bibliothèque",
+            "blocks",
+            "Création",
+            tooltip="Composants 3D réutilisables (dans le Vehicle Editor)",
+        ),
         NavEntry("materials", "Matériaux", "palette", "Création"),
         soon("liveries"),
         soon("lspd"),
@@ -264,9 +275,19 @@ class MainWindow(QMainWindow):
     # --- Navigation ---------------------------------------------------------
     def current_page(self) -> str:
         widget = self.stack.currentWidget()
+        if getattr(self, "_library_shown", False) and widget is self.studio:
+            return "library"
         return next((k for k, p in self.pages.items() if p is widget), "dashboard")
 
     def navigate(self, key: str) -> None:
+        if key == "library":  # la bibliothèque vit dans le Vehicle Editor (onglet de gauche)
+            self.navigate("studio")
+            self.studio.set_panel_visible("left", True)
+            self.studio.left.setCurrentWidget(self.studio.library)
+            self.sidebar.set_current("library")
+            self._library_shown = True
+            return
+        self._library_shown = False
         page = self.pages.get(key)
         if page is None:
             return

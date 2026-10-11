@@ -182,19 +182,23 @@ def test_import_into_project_save_reopen(addon, projects_dir):
     assert root is not None and reopened.project.assets[root.asset_id].format == "yft"
 
 
-def test_v2_project_migrates_to_v3(projects_dir):
+def test_v2_project_migrates_to_current(projects_dir):
     session = ProjectSession.create(projects_dir, "Ancien")
     path = session.file_path
     with closing(sqlite3.connect(path)) as conn:  # simulation d'un fichier au format 2
         conn.execute("DROP TABLE resources")
         conn.execute("ALTER TABLE nodes DROP COLUMN extra")
+        conn.execute("DROP TABLE meshes")
+        conn.execute("ALTER TABLE materials DROP COLUMN extra")
         conn.execute("UPDATE meta SET value = '2' WHERE key = 'schema_version'")
         conn.commit()
     project = store.load_project(path)
     assert project.resources == {}
     store.save_project(project)
     with closing(sqlite3.connect(path)) as conn:
-        assert conn.execute("SELECT value FROM meta WHERE key = 'schema_version'").fetchone()[0] == "3"
+        assert conn.execute("SELECT value FROM meta WHERE key = 'schema_version'").fetchone()[0] == str(
+            store.SCHEMA_VERSION
+        )
 
 
 def test_safe_relative_blocks_traversal():

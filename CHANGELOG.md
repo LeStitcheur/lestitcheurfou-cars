@@ -5,6 +5,61 @@ versionnement [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+## [0.4.0] - 2026-10-11
+
+Vehicle Editor Advanced : modification réelle des véhicules (géométrie, pièces, roues, habitacle,
+points d'ancrage, matériaux), dans le design Dark Premium.
+
+### Modifié
+
+- La page « Studio 3D » devient le **Vehicle Editor** : outils à gauche (scène, bibliothèque,
+  outils de modélisation), viewport au centre, propriétés / géométrie / ancrages / atelier à
+  droite, historique / statistiques / compatibilité FiveM en bas ; panneaux rétractables et
+  disposition mémorisée ; espaces de travail Vehicle Editor, Bodywork Studio, Wheel Editor,
+  Interior Studio.
+- La « Bibliothèque » n'est plus un atelier « Bientôt » : elle est fonctionnelle.
+- Surbrillance de sélection du rendu 3D en bleu électrique (une teinte rose résiduelle de la v0.2
+  subsistait dans le shader).
+- Format de projet `.lsfc` **v4** (migration automatique v1 / v2 / v3 → v4).
+- Avertissements FiveM centralisés (`editor.compat`) et étendus.
+
+### Ajouté (fonctionnel, testé)
+
+- Modes **Objet**, **Édition** (sommets / arêtes / faces, gizmo avec aperçu, Tab) et **Composant**.
+- Édition de maillage (`scene.editmesh`, sans Qt) : transformations, extrusion de région, inset,
+  fusion (centre, distance), suppression, séparation, normales (recalcul, inversion,
+  orientation cohérente), symétrie avec aperçu, alignement sur un plan, projection UV boîte,
+  diagnostic des UV ; biseau via `bmesh.ops.bevel` de Blender en processus annulable.
+- Géométrie locale immuable enregistrée dans le projet ; les fichiers importés ne sont jamais
+  modifiés.
+- Bodywork Studio : panneaux, proportions, 10 pièces originales paramétriques, duplication miroir
+  sans échelle négative.
+- Component Library locale : 25 composants de départ originaux, import de modèles, presets depuis
+  la scène, recherche, filtres, duplication, suppression sans effet sur les projets.
+- Replace Component : prévisualisation, alignement des pivots, ajustement des dimensions,
+  matériaux, parent et ancrages conservés, os GTA V préservés par défaut, réversible.
+- Wheel Editor : identification (os `wheel_*` et noms), profils voiture / SUV / camion / moto /
+  spécial, voie, empattement, hauteurs, symétrie, diamètre, largeur, pivots, aperçu de rotation.
+- Interior Studio : isolation, carrosserie masquée, caméra intérieure, sièges, configurations
+  d'habitacle (civil, police, EMS, commandement).
+- Attachment Points : nœuds `anchor` avec type, contraintes, métadonnées, association, axes
+  affichés et sélectionnables.
+- Matériaux : carte de normales, échelle / décalage UV, 9 presets automobiles originaux, shader
+  GTA V suggéré (indicatif).
+- Variantes de composants (une seule visible à la fois).
+- Historique : transactions, budget mémoire (étapes anciennes oubliées), libération de la
+  géométrie inutile, navigation dans l'historique, points de restauration.
+- Rapport de compatibilité FiveM (os, pivots, hiérarchie, géométrie, UV, échelles, roues), sans
+  promesse de jouabilité.
+- Test de démarrage étendu au Vehicle Editor (code de sortie 5 en cas d'échec).
+- Tests : 22 nouveaux tests (17 scénarios obligatoires, parcours d'acceptation dans la fenêtre).
+
+### Limites connues
+
+- Inset par mise à l'échelle (pas d'épaisseur constante) ; biseau seulement avec Blender.
+- Aucune écriture de formats GTA V : export FiveM à venir ; collisions et LOD non édités.
+- Sollumz non testé (non installé sur la machine de développement).
+
 ## [0.3.0] - 2026-10-11
 
 Import FiveM / GTA V, décomposition 3D et restauration d'une identité propre « Dark Premium ».

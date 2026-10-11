@@ -20,6 +20,7 @@ if TYPE_CHECKING:
 
 EXIT_SMOKE_GL_FAILED = 3
 EXIT_SMOKE_FIVEM_FAILED = 4
+EXIT_SMOKE_EDITOR_FAILED = 5
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
@@ -92,7 +93,9 @@ def _run_smoke_test(app: QApplication, window: MainWindow, delay_ms: int) -> int
     """Vérification de démarrage (CI, exécutable) : rendu du véhicule d'exemple puis sortie.
 
     Code de retour 0 si le rendu OpenGL a fonctionné, ``EXIT_SMOKE_GL_FAILED`` sinon,
-    ``EXIT_SMOKE_FIVEM_FAILED`` si l'addon de démonstration n'a pas pu être analysé et décodé.
+    ``EXIT_SMOKE_FIVEM_FAILED`` si l'addon de démonstration n'a pas pu être analysé et décodé,
+    ``EXIT_SMOKE_EDITOR_FAILED`` si le Vehicle Editor (édition, bibliothèque, sauvegarde) échoue.
+    Le rendu inclut les superpositions du mode Édition et d'un point d'ancrage.
     """
     import tempfile
 
@@ -107,6 +110,7 @@ def _run_smoke_test(app: QApplication, window: MainWindow, delay_ms: int) -> int
     window.navigate("studio")
     viewport = window.studio.viewport
     result = {"code": EXIT_SMOKE_GL_FAILED}
+    editor_ok = _smoke_editor(window, session, log)
 
     def finish() -> None:
         image = viewport.grabFramebuffer()
@@ -120,7 +124,12 @@ def _run_smoke_test(app: QApplication, window: MainWindow, delay_ms: int) -> int
         )
         log.info("\n%s", diagnostics.format_report())
         fivem_ok = _smoke_fivem(log)
-        result["code"] = (0 if fivem_ok else EXIT_SMOKE_FIVEM_FAILED) if ok else EXIT_SMOKE_GL_FAILED
+        if not ok:
+            result["code"] = EXIT_SMOKE_GL_FAILED
+        elif not fivem_ok:
+            result["code"] = EXIT_SMOKE_FIVEM_FAILED
+        else:
+            result["code"] = 0 if editor_ok else EXIT_SMOKE_EDITOR_FAILED
         session.stack.mark_clean()
         window.close()
         app.quit()
@@ -128,6 +137,56 @@ def _run_smoke_test(app: QApplication, window: MainWindow, delay_ms: int) -> int
     QTimer.singleShot(max(delay_ms, 100), finish)
     app.exec()
     return result["code"]
+
+
+def _smoke_editor(window: MainWindow, session, log) -> bool:  # type: ignore[no-untyped-def]
+    """Vehicle Editor : extrusion en mode Édition, bibliothèque, ancrage, sauvegarde, réouverture."""
+    import tempfile
+
+    import numpy as np
+
+    from lsfcars.editor import edit_state as modes
+    from lsfcars.editor.library import ComponentLibrary
+    from lsfcars.project.session import ProjectSession
+    from lsfcars.scene import editmesh
+
+    try:
+        controller = window.controller
+        body = next(n for n in session.scene.walk() if n.name == "caisse")
+        controller.select([body.id])
+        controller.set_mode(modes.EDIT)
+        mesh = controller.edit_mesh()
+        top = int(np.argmax(editmesh.face_normals(mesh.positions, mesh.indices)[:, 1]))
+        controller.edit.set_element(editmesh.FACE, mesh)
+        controller.edit.select(editmesh.coplanar_faces(mesh, top, 20.0))
+        faces = set(controller.edit.selection)
+        controller.run_edit("Extrusion", lambda m: editmesh.extrude_faces(m, faces, 0.03))
+        library = ComponentLibrary(tempfile.mkdtemp(prefix="lsfcars-smoke-lib-"))
+        created = library.ensure_builtins()
+        editor = controller.editor
+        spoiler = editor.insert_payload(library.payload(library.get("lsf-spoiler")), None, None, "Aileron")
+        editor.add_anchor(body.id, "Toit", "roof", (0.0, 0.4, 0.0))
+        triangles = session.geometry_for(session.scene.nodes[body.id]).triangle_count
+        session.save()
+        reopened = ProjectSession.open(session.file_path)
+        ok = (
+            triangles > mesh.triangle_count
+            and spoiler in reopened.scene
+            and reopened.geometry_for(reopened.scene.nodes[body.id]).triangle_count == triangles
+            and any(True for _ in reopened.scene.anchor_nodes())
+        )
+        log.info(
+            "Test de démarrage : Vehicle Editor %s (%d → %d triangles, %d composants de départ)",
+            "OK" if ok else "ÉCHEC",
+            mesh.triangle_count,
+            triangles,
+            created,
+        )
+        controller.select([body.id])  # rendu final : mode Édition et ancrage visibles
+        return ok
+    except Exception:  # noqa: BLE001 (un échec du test doit se traduire par un code de retour)
+        log.exception("Test de démarrage : Vehicle Editor en échec")
+        return False
 
 
 def _smoke_fivem(log) -> bool:  # type: ignore[no-untyped-def]

@@ -5,12 +5,13 @@
 
 Atelier Windows de création, d'adaptation et d'export de véhicules **Lore Friendly** pour **GTA V / FiveM**.
 
-> Statut : **v0.3.0 — import FiveM / GTA V, décomposition 3D, design Dark Premium**.
+> Statut : **v0.4.0 — Vehicle Editor : modélisation réelle, carrosserie, composants, roues, habitacle**.
 > Voir [CHANGELOG.md](CHANGELOG.md) pour ce qui fonctionne réellement aujourd'hui.
 
+![Vehicle Editor — mode Édition](docs/screenshots/1920x1080@1_mode_edition.png)
+![Bodywork Studio et bibliothèque](docs/screenshots/1920x1080@1_bodywork_bibliotheque.png)
+![Wheel Editor](docs/screenshots/1920x1080@1_wheel_editor.png)
 ![Vehicle Import Studio](docs/screenshots/1920x1080@1_import_studio.png)
-![Vue éclatée et textures](docs/screenshots/1920x1080@1_vue_eclatee_textures.png)
-![Studio 3D](docs/screenshots/1920x1080@1_studio_3d.png)
 
 ## Vision
 
@@ -26,10 +27,22 @@ LeStitcheurFou Cars a pour objectif de permettre de :
 
 Tous les types de véhicules sont prévus : voitures, SUV, motos, camions, bateaux, hélicoptères, aéronefs.
 
-## Fonctionnalités de la v0.3.0
+## Fonctionnalités de la v0.4.0
 
 | Fonction | État |
 |---|---|
+| **Vehicle Editor** : modes Objet, Édition (sommets / arêtes / faces), Composant | ✅ |
+| Édition réelle du maillage : déplacer, pivoter, échelle, extrusion, inset, fusion, suppression, normales, symétrie, séparation, projection UV | ✅ |
+| Biseau d'arêtes (Blender en processus auxiliaire) | ✅ si Blender est installé |
+| **Bodywork Studio** : panneaux, proportions, création de pièces originales, symétrie gauche / droite | ✅ |
+| **Component Library** locale (25 composants originaux, import, presets, recherche, filtres) | ✅ |
+| **Replace Component** avec prévisualisation, options et historique réversible | ✅ |
+| **Wheel Editor** : identification, voie, empattement, alignement, échelle, pivots, profils, aperçu de rotation | ✅ |
+| **Interior Studio** : isolation, carrosserie masquée, caméra intérieure, configurations civil / police / EMS / commandement | ✅ |
+| **Attachment Points** : création, axes, contraintes, métadonnées, association | ✅ |
+| Matériaux étendus : carte de normales, UV, 9 presets automobiles, shader GTA V indicatif | ✅ |
+| Historique : transactions, budget mémoire, points de restauration ; rapport de compatibilité FiveM | ✅ |
+| `.lsfc` v4 (géométrie locale, ancrages, variantes ; migration v1 → v4) | ✅ |
 | Design **Dark Premium** (palette bleue officielle, design system centralisé) | ✅ |
 | **Vehicle Import Studio** : dossier FiveM, ZIP, RPF non chiffré, fichiers isolés, installation GTA V | ✅ |
 | Analyse automatique : fichiers, modèles, variantes `_hi`, textures, métadonnées, dépendances, diagnostics | ✅ |
@@ -37,12 +50,13 @@ Tous les types de véhicules sont prévus : voitures, SUV, motos, camions, batea
 | Lecteur de métadonnées (vehicles, handling, carvariations, carcols…) avec vérifications croisées | ✅ |
 | Inspection : composants classés, isolement, vue éclatée non destructive, filaire, os, ancrages, stats | ✅ |
 | Inspecteur de textures : aperçu, format, transparence, mémoire, export PNG / DDS | ✅ |
-| Import dans le projet, `.lsfc` v3 avec manifeste versionné, métadonnées d'os conservées | ✅ |
+| Import dans le projet avec manifeste versionné, métadonnées d'os conservées | ✅ |
 | Blender / Sollumz : détection et sondage réels, tâches annulables | ✅ (Sollumz non testé : non installé) |
 | Collisions `.ybn` (géométrie), export FiveM, écriture des formats GTA V | 🕓 non implémentés |
-| Studio 3D, matériaux, projets, sauvegarde auto (v0.2) | ✅ |
+| Matériaux, projets, sauvegarde auto (v0.2) | ✅ |
 | Livrées, LSPD, EMS / SAMD, IA, Lore Friendly, Optimisation, Export FiveM | 🕓 « Bientôt », non fonctionnels |
 
+Vehicle Editor, outils et limites : [docs/VEHICLE_EDITOR.md](docs/VEHICLE_EDITOR.md).
 Compatibilité détaillée des formats et limites : [docs/FIVEM_IMPORT.md](docs/FIVEM_IMPORT.md).
 Design system : [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md).
 
@@ -68,6 +82,7 @@ addon de démonstration (synthétique) : `python scripts\generate_demo_addon.py`
 ## Documentation
 
 - [Guide utilisateur](docs/GUIDE_UTILISATEUR.md)
+- [Vehicle Editor](docs/VEHICLE_EDITOR.md)
 - [Vehicle Import Studio et formats GTA V / FiveM](docs/FIVEM_IMPORT.md)
 - [Design system Dark Premium](docs/DESIGN_SYSTEM.md)
 - [Installation](docs/INSTALLATION.md)

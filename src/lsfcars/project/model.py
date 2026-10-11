@@ -174,6 +174,8 @@ class Project:
     project_id: str = field(default_factory=new_id)
     thumbnail: bytes | None = None
     resources: dict[str, ImportedResource] = field(default_factory=dict)
+    # Réglages de l'éditeur de véhicule (axes, symétrie…) : voir ``editor.settings``
+    editor: dict = field(default_factory=dict)
 
     @property
     def project_dir(self) -> Path:
