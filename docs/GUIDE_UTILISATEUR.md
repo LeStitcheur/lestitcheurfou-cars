@@ -1,0 +1,94 @@
+# Guide utilisateur — LeStitcheurFou Cars 0.1.0
+
+Ce guide décrit ce que la version 0.1.0 permet **réellement** de faire. Les ateliers marqués
+« Prévu » dans l'application ne sont pas encore disponibles.
+
+## 1. Découvrir l'interface
+
+| Zone | Rôle |
+|---|---|
+| Rail de gauche | Navigation : Accueil, Atelier 3D, puis les ateliers à venir |
+| Accueil | Créer / ouvrir un projet, projets récents, feuille de route |
+| Atelier 3D | Viewport central, explorateur d'objets (gauche), propriétés (droite) |
+| Journal (bas) | Messages de l'application en direct, filtrables par niveau |
+| Barre d'état | Projet ouvert, nombre d'objets et de triangles, carte graphique utilisée |
+
+Les panneaux peuvent être déplacés, détachés ou fermés ; le menu **Affichage** permet de les
+réafficher. La disposition est mémorisée.
+
+## 2. Premier essai en 30 secondes
+
+Sur l'accueil, cliquez **Découvrir avec le véhicule d'exemple** : un projet de démonstration est
+créé dans `Documents\LeStitcheurFou Cars\Projets` avec un véhicule de test libre de droits.
+
+## 3. Projets
+
+- **Nouveau projet** (`Ctrl+N`) : nom, type de véhicule (voiture, SUV, moto, camion, bateau,
+  hélicoptère, avion), usage (civil, LSPD, EMS), emplacement, description.
+- **Ouvrir** (`Ctrl+O`) : sélectionnez un fichier `.lsfc`.
+- **Enregistrer** (`Ctrl+S`) : enregistre la scène, les propriétés et la position de la caméra.
+  Un astérisque `*` dans le titre signale des modifications non enregistrées ; l'application
+  propose d'enregistrer avant de fermer.
+
+Structure d'un projet :
+
+```
+MonVehicule/
+├── MonVehicule.lsfc   ← fichier projet (à ouvrir)
+└── assets/            ← copies des modèles importés
+```
+
+Pour transmettre un projet, copiez le dossier complet.
+
+## 4. Importer un modèle 3D
+
+**Fichier › Importer un modèle 3D** (`Ctrl+I`) ou bouton **Importer…** de l'explorateur.
+
+Formats acceptés : `.glb`, `.gltf` (avec ses fichiers `.bin` et textures), `.obj` (avec `.mtl`),
+`.stl`, `.ply`. Le fichier est vérifié puis **copié** dans `assets/` : l'original n'est jamais
+modifié. Les couleurs de sommets et de matériaux sont affichées ; les textures ne le sont pas
+encore.
+
+Les fichiers propriétaires GTA V (`.yft`, `.ydr`…) ne sont pas encore pris en charge.
+
+## 5. Naviguer dans la scène
+
+| Action | Souris / clavier |
+|---|---|
+| Tourner autour de la scène | Clic gauche + glisser |
+| Déplacer la vue | Clic droit + glisser, molette enfoncée + glisser, ou Maj + clic gauche |
+| Zoomer | Molette |
+| Sélectionner un objet | Clic gauche sur l'objet (clic dans le vide : désélectionner) |
+| Cadrer la sélection (ou tout) | `F` ou bouton **Cadrer** |
+| Vues avant / droite / dessus / perspective | `1` / `3` / `7` / `5` |
+| Réinitialiser la vue | `Début` (Home) |
+| Désélectionner | `Échap` |
+
+La grille au sol mesure 1 m par case (lignes renforcées tous les 5 m) ; l'axe rouge est X,
+l'axe bleu est Z, la hauteur est Y.
+
+## 6. Modifier les objets
+
+Sélectionnez un objet dans l'explorateur ou le viewport. Le panneau **Propriétés** permet de :
+
+- le renommer et le masquer / l'afficher ;
+- régler sa **position** (mètres), sa **rotation** (degrés, ordre X puis Y puis Z) et son
+  **échelle** (uniforme par défaut — décochez « Échelle uniforme » pour les axes séparés) ;
+- revenir à la transformation d'origine.
+
+Sans sélection, le panneau affiche les informations du projet (nom, type, usage, description).
+
+Clic droit dans l'explorateur : cadrer, masquer, retirer. **Retirer** enlève l'objet de la scène
+mais conserve son fichier dans `assets/`.
+
+## 7. Journal et diagnostics
+
+- Le panneau **Journal** affiche les opérations et erreurs ; filtrez par niveau.
+- **Aide › Diagnostics…** génère un rapport (versions, système, carte graphique) à joindre aux
+  signalements de bug.
+- **Aide › Ouvrir le dossier des logs** ouvre `%APPDATA%\LeStitcheurFouCars\logs`.
+
+## 8. Ateliers à venir
+
+Livrées, LSPD / EMS, Génération IA et Export FiveM sont visibles dans la navigation pour présenter
+la feuille de route ; chaque page indique « Prévu — non disponible dans la v0.1.0 ».

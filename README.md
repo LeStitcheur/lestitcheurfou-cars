@@ -1,5 +1,8 @@
 # LeStitcheurFou Cars
 
+[![CI](https://github.com/LeStitcheur/lestitcheurfou-cars/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/LeStitcheur/lestitcheurfou-cars/actions/workflows/ci.yml)
+[![Build Windows](https://github.com/LeStitcheur/lestitcheurfou-cars/actions/workflows/build-windows.yml/badge.svg?branch=develop)](https://github.com/LeStitcheur/lestitcheurfou-cars/actions/workflows/build-windows.yml)
+
 Atelier Windows de création, d'adaptation et d'export de véhicules **Lore Friendly** pour **GTA V / FiveM**.
 
 > Statut : **v0.1.0 — fondations**. Voir [CHANGELOG.md](CHANGELOG.md) pour ce qui fonctionne réellement aujourd'hui.
@@ -56,6 +59,11 @@ Tests : `pytest` — Build Windows : `scripts\build_windows.ps1`.
 - [Installation](docs/INSTALLATION.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [Contribuer](CONTRIBUTING.md)
+
+## Licence
+
+Licence du projet : à définir par le propriétaire du dépôt (aucun fichier `LICENSE` pour l'instant,
+ce qui équivaut à « tous droits réservés »).
 
 ## Avertissement légal
 
