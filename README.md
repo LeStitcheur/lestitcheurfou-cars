@@ -5,9 +5,11 @@
 
 Atelier Windows de création, d'adaptation et d'export de véhicules **Lore Friendly** pour **GTA V / FiveM**.
 
-> Statut : **v0.4.0 — Vehicle Editor : modélisation réelle, carrosserie, composants, roues, habitacle**.
+> Statut : **v0.5.0 — Emergency Vehicle Studio : variantes de services d'urgence, équipements, éclairages, motifs**.
 > Voir [CHANGELOG.md](CHANGELOG.md) pour ce qui fonctionne réellement aujourd'hui.
 
+![Emergency Studio — variante LSPD](docs/screenshots/1920x1080@1_emergency_studio.png)
+![Emergency Studio — éclairage et timeline](docs/screenshots/1920x1080@1_emergency_eclairage.png)
 ![Vehicle Editor — mode Édition](docs/screenshots/1920x1080@1_mode_edition.png)
 ![Bodywork Studio et bibliothèque](docs/screenshots/1920x1080@1_bodywork_bibliotheque.png)
 ![Wheel Editor](docs/screenshots/1920x1080@1_wheel_editor.png)
@@ -27,10 +29,19 @@ LeStitcheurFou Cars a pour objectif de permettre de :
 
 Tous les types de véhicules sont prévus : voitures, SUV, motos, camions, bateaux, hélicoptères, aéronefs.
 
-## Fonctionnalités de la v0.4.0
+## Fonctionnalités de la v0.5.0
 
 | Fonction | État |
 |---|---|
+| **Emergency Studio** : variantes non destructives (LSPD, BCSO, SAHP, EMS, SAMD, LSFD, Rescue, personnalisé) | ✅ |
+| Bibliothèque de 33 équipements originaux (Police, EMS, Fire) et import d'équipements personnels | ✅ |
+| Placement interactif : zones par profil, clic / glisser-déposer sur la carrosserie, magnétisme, symétrie, miroir, collisions approximatives | ✅ |
+| 12 profils de véhicules (berline → aéronef) et profils personnalisés | ✅ |
+| Lighting Studio : sources, groupes, timeline des motifs, presets, prévisualisation déterministe | ✅ (simulation viewport) |
+| Export `carcols.meta` (non-ELS), MISS-ELS et JSON intermédiaire ; ELS classique expliqué comme indisponible | ✅ (non garanti en jeu) |
+| Sirènes : modes liés aux motifs, tonalités synthétisées originales, aperçu | ✅ (aperçu Windows) |
+| Intérieurs Police / EMS / Fire, données de livrée, contrôle Lore Friendly | ✅ (livrée : données seules) |
+| `.lsfc` v5 (documents de studio ; migration v1 → v5) | ✅ |
 | **Vehicle Editor** : modes Objet, Édition (sommets / arêtes / faces), Composant | ✅ |
 | Édition réelle du maillage : déplacer, pivoter, échelle, extrusion, inset, fusion, suppression, normales, symétrie, séparation, projection UV | ✅ |
 | Biseau d'arêtes (Blender en processus auxiliaire) | ✅ si Blender est installé |
@@ -42,7 +53,7 @@ Tous les types de véhicules sont prévus : voitures, SUV, motos, camions, batea
 | **Attachment Points** : création, axes, contraintes, métadonnées, association | ✅ |
 | Matériaux étendus : carte de normales, UV, 9 presets automobiles, shader GTA V indicatif | ✅ |
 | Historique : transactions, budget mémoire, points de restauration ; rapport de compatibilité FiveM | ✅ |
-| `.lsfc` v4 (géométrie locale, ancrages, variantes ; migration v1 → v4) | ✅ |
+| Géométrie locale, ancrages, variantes de composants (`.lsfc` depuis v4) | ✅ |
 | Design **Dark Premium** (palette bleue officielle, design system centralisé) | ✅ |
 | **Vehicle Import Studio** : dossier FiveM, ZIP, RPF non chiffré, fichiers isolés, installation GTA V | ✅ |
 | Analyse automatique : fichiers, modèles, variantes `_hi`, textures, métadonnées, dépendances, diagnostics | ✅ |
@@ -54,8 +65,9 @@ Tous les types de véhicules sont prévus : voitures, SUV, motos, camions, batea
 | Blender / Sollumz : détection et sondage réels, tâches annulables | ✅ (Sollumz non testé : non installé) |
 | Collisions `.ybn` (géométrie), export FiveM, écriture des formats GTA V | 🕓 non implémentés |
 | Matériaux, projets, sauvegarde auto (v0.2) | ✅ |
-| Livrées, LSPD, EMS / SAMD, IA, Lore Friendly, Optimisation, Export FiveM | 🕓 « Bientôt », non fonctionnels |
+| Livery Studio (éditeur), IA, Optimisation, Export FiveM complet (YFT) | 🕓 « Bientôt », non fonctionnels |
 
+Emergency Studio, adaptateurs et limites : [docs/EMERGENCY_STUDIO.md](docs/EMERGENCY_STUDIO.md).
 Vehicle Editor, outils et limites : [docs/VEHICLE_EDITOR.md](docs/VEHICLE_EDITOR.md).
 Compatibilité détaillée des formats et limites : [docs/FIVEM_IMPORT.md](docs/FIVEM_IMPORT.md).
 Design system : [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md).
@@ -82,6 +94,7 @@ addon de démonstration (synthétique) : `python scripts\generate_demo_addon.py`
 ## Documentation
 
 - [Guide utilisateur](docs/GUIDE_UTILISATEUR.md)
+- [Emergency Studio](docs/EMERGENCY_STUDIO.md)
 - [Vehicle Editor](docs/VEHICLE_EDITOR.md)
 - [Vehicle Import Studio et formats GTA V / FiveM](docs/FIVEM_IMPORT.md)
 - [Design system Dark Premium](docs/DESIGN_SYSTEM.md)

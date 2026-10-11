@@ -21,6 +21,7 @@ if TYPE_CHECKING:
 EXIT_SMOKE_GL_FAILED = 3
 EXIT_SMOKE_FIVEM_FAILED = 4
 EXIT_SMOKE_EDITOR_FAILED = 5
+EXIT_SMOKE_EMERGENCY_FAILED = 6
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
@@ -94,7 +95,8 @@ def _run_smoke_test(app: QApplication, window: MainWindow, delay_ms: int) -> int
 
     Code de retour 0 si le rendu OpenGL a fonctionné, ``EXIT_SMOKE_GL_FAILED`` sinon,
     ``EXIT_SMOKE_FIVEM_FAILED`` si l'addon de démonstration n'a pas pu être analysé et décodé,
-    ``EXIT_SMOKE_EDITOR_FAILED`` si le Vehicle Editor (édition, bibliothèque, sauvegarde) échoue.
+    ``EXIT_SMOKE_EDITOR_FAILED`` si le Vehicle Editor (édition, bibliothèque, sauvegarde) échoue,
+    ``EXIT_SMOKE_EMERGENCY_FAILED`` si l'Emergency Studio (variante, équipements, motif) échoue.
     Le rendu inclut les superpositions du mode Édition et d'un point d'ancrage.
     """
     import tempfile
@@ -111,6 +113,7 @@ def _run_smoke_test(app: QApplication, window: MainWindow, delay_ms: int) -> int
     viewport = window.studio.viewport
     result = {"code": EXIT_SMOKE_GL_FAILED}
     editor_ok = _smoke_editor(window, session, log)
+    emergency_ok = _smoke_emergency(log)
 
     def finish() -> None:
         image = viewport.grabFramebuffer()
@@ -128,8 +131,10 @@ def _run_smoke_test(app: QApplication, window: MainWindow, delay_ms: int) -> int
             result["code"] = EXIT_SMOKE_GL_FAILED
         elif not fivem_ok:
             result["code"] = EXIT_SMOKE_FIVEM_FAILED
+        elif not editor_ok:
+            result["code"] = EXIT_SMOKE_EDITOR_FAILED
         else:
-            result["code"] = 0 if editor_ok else EXIT_SMOKE_EDITOR_FAILED
+            result["code"] = 0 if emergency_ok else EXIT_SMOKE_EMERGENCY_FAILED
         session.stack.mark_clean()
         window.close()
         app.quit()
@@ -186,6 +191,50 @@ def _smoke_editor(window: MainWindow, session, log) -> bool:  # type: ignore[no-
         return ok
     except Exception:  # noqa: BLE001 (un échec du test doit se traduire par un code de retour)
         log.exception("Test de démarrage : Vehicle Editor en échec")
+        return False
+
+
+def _smoke_emergency(log) -> bool:  # type: ignore[no-untyped-def]
+    """Emergency Studio : variante LSPD, rampe, intérieur, motif déterministe, sauvegarde, réouverture."""
+    import tempfile
+
+    from lsfcars.editor.vehicle import VehicleAxes
+    from lsfcars.emergency.equipment import EquipmentLibrary
+    from lsfcars.emergency.studio import EmergencyStudio
+    from lsfcars.project.session import ProjectSession
+
+    try:
+        session = ProjectSession.create(tempfile.mkdtemp(prefix="lsfcars-smoke-urg-"), "Urgence")
+        session.import_model(samples_dir() / "vehicule_test.glb")
+        library = EquipmentLibrary(tempfile.mkdtemp(prefix="lsfcars-smoke-equip-"))
+        created = library.ensure_builtins()
+        studio = EmergencyStudio(session, library)
+        studio.editor.set_axes(VehicleAxes(forward_sign=1))
+        variant_id = studio.create_variant("LSPD", "lspd")
+        bar = studio.add_equipment("lsf-pol-lightbar", "roof")
+        studio.apply_interior_preset("police")
+        variant = studio.state().variant(variant_id)
+        frames = [studio.lights_on(variant, t) for t in range(0, 1400, 70)]
+        session.save()
+        reopened = EmergencyStudio(ProjectSession.open(session.file_path), library)
+        restored = reopened.state().variant(variant_id)
+        ok = (
+            len(bar.light_ids) > 0
+            and len({frozenset(f) for f in frames}) > 1
+            and frames == [studio.lights_on(variant, t) for t in range(0, 1400, 70)]
+            and restored is not None
+            and len(reopened.equipment_nodes(restored)) == len(studio.equipment_nodes(variant))
+        )
+        log.info(
+            "Test de démarrage : Emergency Studio %s (%d équipements de départ, %d posés, %d feux)",
+            "OK" if ok else "ÉCHEC",
+            created,
+            len(studio.equipment_nodes(variant)),
+            len(variant.lights),
+        )
+        return ok
+    except Exception:  # noqa: BLE001 (un échec du test doit se traduire par un code de retour)
+        log.exception("Test de démarrage : Emergency Studio en échec")
         return False
 
 

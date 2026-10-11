@@ -100,10 +100,15 @@ class LibraryComponent:
     builtin: bool = False
     created_at: str = field(default_factory=utc_now_iso)
     triangles: int = 0
+    # Équipements (v0.5) : famille de services, profils de véhicules compatibles, projecteurs
+    family: str = ""
+    services: list[str] = field(default_factory=list)
+    compatible_profiles: list[str] = field(default_factory=list)  # vide : aucun profil imposé
+    emitters: list[dict] = field(default_factory=list)  # {name, position, rotation, color, group}
 
     @property
     def category_label(self) -> str:
-        return CATEGORIES.get(self.category, CATEGORIES["personnalises"])
+        return ALL_CATEGORIES.get(self.category, CATEGORIES["personnalises"])
 
     @classmethod
     def from_dict(cls, data: dict) -> LibraryComponent:
@@ -111,6 +116,11 @@ class LibraryComponent:
 
 
 Attach = tuple[tuple[str, str, tuple[float, float, float]], ...]
+ALL_CATEGORIES: dict[str, str] = dict(CATEGORIES)  # libellés de toutes les bibliothèques
+
+
+def register_categories(categories: dict[str, str]) -> None:
+    ALL_CATEGORIES.update(categories)
 
 
 @dataclass(frozen=True)
@@ -234,8 +244,13 @@ def _box_corners(bmin: np.ndarray, bmax: np.ndarray) -> np.ndarray:
 
 
 class ComponentLibrary:
+    categories: dict[str, str] = CATEGORIES
+    builtin_specs: tuple = ()  # BUILTINS, rattachés en fin de module
+    default_category = "personnalises"
+    folder_name = "library"
+
     def __init__(self, root: str | Path | None = None) -> None:
-        self.root = Path(root) if root is not None else default_root()
+        self.root = Path(root) if root is not None else default_root().parent / self.folder_name
         self._components: dict[str, LibraryComponent] = {}
         self._removed_builtins: set[str] = set()
         self._load()
@@ -328,11 +343,15 @@ class ComponentLibrary:
         builtin: bool = False,
         component_id: str | None = None,
         textures: dict[int, bytes] | None = None,
+        family: str = "",
+        services: list[str] | None = None,
+        compatible_profiles: list[str] | None = None,
+        emitters: list[dict] | None = None,
     ) -> LibraryComponent:
         """Ajoute un composant (pièces = maillage, transformation, matériau)."""
         if not parts:
             raise LibraryError("Un composant doit contenir au moins une pièce.")
-        category = category if category in CATEGORIES else "personnalises"
+        category = category if category in self.categories else self.default_category
         component_id = component_id or f"{_slug(name)}-{uuid.uuid4().hex[:8]}"
         folder = self.root / "meshes" / component_id
         materials: list[dict] = []
@@ -381,6 +400,10 @@ class ComponentLibrary:
             description,
             builtin=builtin,
             triangles=triangles,
+            family=family,
+            services=list(services or []),
+            compatible_profiles=list(compatible_profiles or []),
+            emitters=[dict(e) for e in emitters or []],
         )
         self._components[component_id] = component
         self._save()
@@ -391,7 +414,7 @@ class ComponentLibrary:
         from lsfcars.scene.material_presets import preset
 
         created = 0
-        for spec in BUILTINS:
+        for spec in self.builtin_specs:
             component_id = f"lsf-{spec.key}"
             if component_id in self._components or component_id in self._removed_builtins:
                 continue
@@ -416,6 +439,7 @@ class ComponentLibrary:
                 attach_points=attach,
                 builtin=True,
                 component_id=component_id,
+                **(spec.extras() if hasattr(spec, "extras") else {}),
             )
             created += 1
         return created
@@ -550,6 +574,10 @@ class ComponentLibrary:
             description=source.description,
             attach_points=[dict(a) for a in source.attach_points],
             textures=textures,
+            family=source.family,
+            services=source.services,
+            compatible_profiles=source.compatible_profiles,
+            emitters=source.emitters,
         )
 
     def update(self, component_id: str, **fields) -> LibraryComponent:  # type: ignore[no-untyped-def]
@@ -607,6 +635,13 @@ class ComponentLibrary:
             "provenance": component.provenance,
             "license": component.license,
         }
+        if component.family:  # équipement d'urgence : famille, services, projecteurs
+            info.update(
+                family=component.family,
+                services=list(component.services),
+                compatible_profiles=list(component.compatible_profiles),
+                emitters=[dict(e) for e in component.emitters],
+            )
         mesh_payload: dict[str, MeshData] = {}
         single = len(meshes) == 1 and not component.attach_points
         root = SceneNode(
@@ -652,3 +687,6 @@ class ComponentLibrary:
             )
             snapshots.append({**anchor.snapshot(), "parent_id": root.id})
         return Payload(snapshots, mesh_payload, materials)
+
+
+ComponentLibrary.builtin_specs = BUILTINS

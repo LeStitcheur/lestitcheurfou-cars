@@ -13,7 +13,7 @@ import math
 
 import numpy as np
 from PySide6.QtCore import QBuffer, QIODevice, QPoint, Qt, QTimer, Signal
-from PySide6.QtGui import QKeyEvent, QMouseEvent, QResizeEvent, QWheelEvent
+from PySide6.QtGui import QDragEnterEvent, QDropEvent, QKeyEvent, QMouseEvent, QResizeEvent, QWheelEvent
 from PySide6.QtOpenGLWidgets import QOpenGLWidget
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QMenu, QWidget
 
@@ -96,6 +96,11 @@ class Viewport3D(QOpenGLWidget):
         self.edit_preview: tuple[str, object] | None = None  # (maillage, MeshData) pendant un glisser
         self.show_anchors = True
         self._overlay_cache: tuple[tuple, list[Overlay]] | None = None
+        # Points d'extension (Emergency Studio) : superpositions, clic de placement, dépôt
+        self.overlay_providers: list = []  # fonctions () -> list[Overlay]
+        self.click_handler = None  # fonction (x, y) -> bool (True : clic consommé)
+        self.drop_handler = None  # fonction (texte, x, y) -> bool
+        self.drop_mime = "application/x-lsf-equipment"
         self._gl_error: str | None = None
         self._press: QPoint | None = None
         self._last = QPoint()
@@ -434,7 +439,36 @@ class Viewport3D(QOpenGLWidget):
                 result.append(anchors)
         if self.editing:
             result.extend(self._edit_overlays())
+        for provider in self.overlay_providers:
+            try:
+                result.extend(provider())
+            except Exception as exc:  # noqa: BLE001 (une superposition défaillante ne bloque pas le rendu)
+                log.warning("Superposition ignorée : %s", exc)
         return result
+
+    # --- Glisser-déposer (équipements) ------------------------------------------------
+    def dragEnterEvent(self, event: QDragEnterEvent) -> None:  # noqa: N802
+        if self.drop_handler is not None and event.mimeData().hasFormat(self.drop_mime):
+            event.acceptProposedAction()
+        else:
+            event.ignore()
+
+    def dragMoveEvent(self, event) -> None:  # type: ignore[no-untyped-def]  # noqa: N802
+        if self.drop_handler is not None and event.mimeData().hasFormat(self.drop_mime):
+            event.acceptProposedAction()
+
+    def dropEvent(self, event: QDropEvent) -> None:  # noqa: N802
+        if self.drop_handler is None or not event.mimeData().hasFormat(self.drop_mime):
+            event.ignore()
+            return
+        text = bytes(event.mimeData().data(self.drop_mime)).decode("utf-8")
+        position = event.position()
+        if self.drop_handler(text, position.x(), position.y()):
+            event.acceptProposedAction()
+
+    def screen_ray(self, x: float, y: float) -> tuple[np.ndarray, np.ndarray]:
+        """Rayon monde passant par le pixel (x, y)."""
+        return picking.ray_from_screen(self.camera, x, y, self.width(), self.height())
 
     def _anchor_overlay(self) -> Overlay | None:
         scene = self.session.scene
@@ -805,7 +839,9 @@ class Viewport3D(QOpenGLWidget):
                 mode = "add"
             else:
                 mode = "replace"
-            if self.editing:
+            if self.click_handler is not None and self.click_handler(pos.x(), pos.y()):
+                pass  # clic consommé (placement d'équipement)
+            elif self.editing:
                 picked_element = self.pick_element(pos.x(), pos.y())
                 self.edit_state.select([picked_element] if picked_element is not None else [], mode)
             else:

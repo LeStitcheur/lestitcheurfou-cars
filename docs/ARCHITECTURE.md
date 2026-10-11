@@ -77,6 +77,27 @@ Principe : une modification de géométrie crée un nouveau `MeshData` rangé da
 `SceneGraph.meshes` ; la commande `SetGeometry` bascule la référence du nœud. L'annulation est
 donc instantanée ; l'historique a un budget mémoire et la géométrie non référencée est libérée.
 
+### Ajouts v0.5 (Emergency Studio)
+
+```
+src/lsfcars/
+├── scene/commands.py   SetDocument : modification annulable d'un document de scène (JSON)
+├── emergency/          logique de l'Emergency Studio, sans Qt
+│   ├── model.py        services, profils de véhicules et zones, feux, groupes, motifs,
+│   │                   sirènes, livrée (données), variantes, StudioState, Lore Friendly
+│   ├── equipment.py    33 équipements procéduraux originaux, EquipmentLibrary
+│   ├── studio.py       EmergencyStudio : variantes, placement (zones + lancer de rayon),
+│   │                   miroir, collisions, intérieurs, feux, motifs, aperçu, diagnostics
+│   ├── sirens.py       tonalités synthétisées (WAV), aperçu winsound
+│   └── adapters.py     adaptateurs d'export : JSON, carcols.meta, MISS-ELS, ELS classique (refusé)
+└── ui/emergency/       page Emergency Studio et panneaux
+```
+
+Principe : l'état du studio (variantes, feux, motifs, sirènes, livrée) est un document JSON
+`SceneGraph.documents["emergency"]` ; les équipements sont de vrais nœuds de scène rangés sous un
+groupe par variante. Chaque opération est une `CompositeCommand` (commandes de scène +
+`SetDocument`) : annulation et rétablissement couvrent les deux.
+
 ## Format de projet `.lsfc`
 
 Base SQLite, écrite dans un fichier temporaire puis substituée (`os.replace`) : un plantage
@@ -91,10 +112,11 @@ et ne modifie jamais le fichier.
 | `nodes` | hiérarchie : parent, rang, nom, type, transformation (JSON), visibilité, verrou, asset, maillage, matériau, `extra` (JSON, format 3 : métadonnées d'origine GTA V) |
 | `resources` | format 3 : ressources FiveM importées — nom, source, type de source, statut, date, `manifest` (JSON versionné) |
 | `meshes` | format 4 : géométrie locale (clé, nom, npz compressé : positions, indices, normales, couleurs, UV) |
+| `documents` | format 5 : documents de studio (clé, JSON), ex. `emergency` |
 | `thumbnail` | miniature PNG |
 
 Historique : format 1 (v0.1, table `scene_objects`), format 2 (v0.2), format 3 (v0.3), format 4
-(v0.4 : `meshes`, `materials.extra`, `meta.editor`, nœuds `anchor`).
+(v0.4 : `meshes`, `materials.extra`, `meta.editor`, nœuds `anchor`), format 5 (v0.5 : `documents`).
 
 Évolution du schéma : incrémenter `SCHEMA_VERSION` et ajouter le script dans `_MIGRATIONS`
 (`store.py`). Un projet plus récent que le logiciel est refusé avec un message explicite.

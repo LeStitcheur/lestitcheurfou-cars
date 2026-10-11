@@ -5,6 +5,68 @@ versionnement [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+## [0.5.0] - 2026-10-11
+
+Emergency Vehicle Studio : transformation d'un véhicule civil en variantes de services d'urgence
+fictifs (LSPD, BCSO, SAHP, EMS, SAMD, LSFD, Rescue, personnalisé), dans le design Dark Premium.
+
+### Modifié
+
+- L'entrée « Emergency Studio » remplace les ateliers « LSPD » et « EMS » marqués « Bientôt ».
+- Format de projet `.lsfc` **v5** : table `documents` (données de studio non géométriques),
+  migration automatique v1…v4 → v5.
+- `ComponentLibrary` : catégories, composants de départ et dossier paramétrables ; champs
+  famille, services, profils compatibles et émetteurs lumineux.
+- Viewport : glisser-déposer, gestionnaire de clic prioritaire, superpositions fournies par les
+  pages ; points ronds et halos doux dans le rendu des superpositions.
+- Panneaux de l'Emergency Studio : listes déroulantes et rangées de boutons qui ne débordent plus.
+- OpenGL du bureau demandé explicitement : l'exécutable basculait vers le rendu logiciel Mesa
+  malgré un GPU fonctionnel (le rendu logiciel reste disponible par `--software-gl` ou les
+  paramètres).
+
+### Ajouté (fonctionnel, testé)
+
+- Page **Emergency Studio** : service / équipements / composants à gauche, viewport au centre,
+  propriétés / éclairage / configurations / export à droite, timeline lumineuse / diagnostics /
+  historique en bas ; disposition mémorisée ; passage au Vehicle Editor sans perte.
+- Variantes non destructives : création, duplication, renommage, suppression restaurable,
+  comparaison, matériaux propres à chaque variante, une seule variante visible à la fois.
+- Bibliothèque d'équipements : 33 équipements originaux procéduraux (Police, EMS, Fire) avec
+  identifiant, catégorie, profils compatibles, dimensions, pivot, émetteurs, provenance et
+  licence ; import de modèles personnels.
+- Placement : zones par profil de véhicule (toit, calandre, pare-chocs, rétroviseurs, lunette…),
+  lancer de rayon sur la carrosserie, clic ou glisser-déposer dans le viewport, alignement sur la
+  surface, magnétisme, pas de rotation, paire symétrique, duplication miroir, collisions
+  approximatives (boîtes englobantes).
+- 12 profils de véhicules (berline, SUV, 4x4, pick-up, van, ambulance, camion, motos, hélicoptère,
+  bateau, aéronef) et profils personnalisés ; aucune hypothèse de rampe universelle.
+- Lighting Studio : sources (couleur, intensité, portée, angle, visibilité, activation) et groupes
+  (avant, arrière, gauche, droite, rampe principale, secondaires, travail). Prévisualisation
+  **simulée** dans le viewport, distincte des données GTA V.
+- Timeline des motifs : étapes, durées, groupes allumés, presets (alternance, double, triple,
+  simultané, progressif, personnalisé), vitesse, lecture / pause, duplication ; évaluation
+  déterministe.
+- Adaptateurs d'export : données intermédiaires JSON, `carcols.meta` (sirènes, non-ELS) et
+  MISS-ELS (XML `vcfroot` + liste des extras) ; ELS classique déclaré indisponible avec
+  explication. Chaque adaptateur liste fonctionnalités, limites, dépendances et validations.
+- Sirènes : profils et modes liés aux motifs, tonalités originales synthétisées (aperçu Windows),
+  chaînes AudioString pour l'export ; aucun son propriétaire.
+- Intérieurs Police, EMS / SAMD, Fire / Rescue et presets personnels.
+- Livrée : structure de données seulement (Livery Studio prévu).
+- Lore Friendly : marques et services fictifs, détection de marques réelles, registre de
+  provenance et de licence, sans garantie juridique.
+- Diagnostics : nombre de feux (limite de prévisualisation), motifs, mémoire, collisions.
+- Test de démarrage étendu à l'Emergency Studio (code de sortie 6 en cas d'échec).
+- Tests : 11 nouveaux tests (scénarios obligatoires et parcours d'acceptation dans la fenêtre).
+
+### Limites connues
+
+- Aucune garantie d'utilisation en jeu : pas d'écriture YFT (os de sirène, extras du modèle non
+  produits) ; ordre des bits du séquenceur `carcols` supposé (premier pas = bit de poids fort).
+- ELS classique non exportable ; les sections « MISC » de MISS-ELS ne sont pas exportées.
+- Aperçu sonore limité à Windows (`winsound`).
+- Collisions approximatives ; le véhicule d'exemple est orienté +Z (régler les axes).
+
 ## [0.4.0] - 2026-10-11
 
 Vehicle Editor Advanced : modification réelle des véhicules (géométrie, pièces, roues, habitacle,

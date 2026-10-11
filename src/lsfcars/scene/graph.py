@@ -98,6 +98,9 @@ class SceneGraph:
         self._children: dict[str | None, list[str]] = {None: []}
         self.materials: dict[str, Material] = {}
         self.meshes: dict[str, MeshData] = {}
+        # Documents d'extension sérialisables en JSON (ex. « emergency » : variantes, feux, motifs),
+        # modifiés uniquement par la commande ``SetDocument`` pour rester annulables.
+        self.documents: dict[str, dict] = {}
 
     # --- Lecture ------------------------------------------------------------
     def __contains__(self, node_id: object) -> bool:
@@ -217,6 +220,7 @@ class SceneGraph:
         self._children = {None: []}
         self.materials.clear()
         self.meshes.clear()
+        self.documents.clear()
 
     def anchor_nodes(self) -> Iterator[SceneNode]:
         return (n for n in self.walk() if n.kind is NodeKind.ANCHOR)

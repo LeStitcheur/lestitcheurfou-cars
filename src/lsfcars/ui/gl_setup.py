@@ -18,6 +18,8 @@ def configure_opengl(software: bool = False) -> None:
     """Demande un contexte OpenGL 3.3 core ; ``software`` force le rendu Mesa embarqué."""
     if software or software_gl_requested():
         QCoreApplication.setAttribute(Qt.ApplicationAttribute.AA_UseSoftwareOpenGL)
+    else:  # sinon l'exécutable figé peut basculer seul vers Mesa malgré un GPU fonctionnel
+        QCoreApplication.setAttribute(Qt.ApplicationAttribute.AA_UseDesktopOpenGL)
     QCoreApplication.setAttribute(Qt.ApplicationAttribute.AA_ShareOpenGLContexts)
 
     fmt = QSurfaceFormat()

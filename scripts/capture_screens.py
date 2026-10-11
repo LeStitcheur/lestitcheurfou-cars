@@ -164,11 +164,59 @@ def screens(width: int, height: int, scale: str) -> None:
         studio.interior.hide_body.setChecked(True)
         studio.bottom.setCurrentWidget(studio.history)
         studio.history.refresh()
-        QTimer.singleShot(500, lambda: (grab("interior_ancrages"), step_import()))
+        QTimer.singleShot(500, lambda: (grab("interior_ancrages"), step_emergency()))
+
+    def step_emergency() -> None:
+        from lsfcars.emergency.equipment import EquipmentLibrary
+
+        studio_page = window.studio
+        studio_page.interior.hide_body.setChecked(False)
+        studio_page.set_workspace("editor")
+        page = window.emergency
+        library = EquipmentLibrary()
+        library.ensure_builtins()
+        page.set_library(library)
+        window.navigate("emergency")
+        studio = page.studio
+        studio.create_variant("Berline LSPD", "lspd")
+        studio.add_equipment("lsf-pol-lightbar", "roof")
+        studio.add_equipment("lsf-pol-grille", "grille")
+        studio.add_equipment_pair("lsf-pol-mirror", "mirror_l")
+        studio.add_equipment("lsf-pol-bumper", "bumper_rear")
+        studio.apply_interior_preset("police")
+        page.refresh()
+        page.left.setCurrentWidget(page.equipment_panel)
+        page.equipment_panel.select_component("lsf-pol-lightbar")
+        page.bottom.setCurrentWidget(page.timeline)
+        page.set_playing(True)
+        page._timer.stop()
+        page.time_ms = 0
+        page.advance(150)
+        QTimer.singleShot(600, lambda: (grab("emergency_studio"), step_emergency_lighting()))
+
+    def step_emergency_lighting() -> None:
+        page = window.emergency
+        studio = page.studio
+        studio.create_variant("Berline EMS", "ems")
+        studio.add_equipment("lsf-ems-lightbar", "roof")
+        studio.add_equipment("lsf-ems-flasher-pair", "grille")
+        page.refresh()
+        page.right.setCurrentIndex(1)
+        page.lighting.list.item(0).setSelected(True)
+        page.left.setCurrentIndex(0)
+        page.advance(420)
+        QTimer.singleShot(600, lambda: (grab("emergency_eclairage"), step_emergency_config()))
+
+    def step_emergency_config() -> None:
+        page = window.emergency
+        page.set_playing(False)
+        page.right.setCurrentIndex(2)
+        page.bottom.setCurrentWidget(page.diagnostics)
+        page.diagnostics.refresh()
+        page.configuration.refresh_lore()
+        QTimer.singleShot(500, lambda: (grab("emergency_configurations"), step_import()))
 
     def step_import() -> None:
-        window.studio.interior.hide_body.setChecked(False)
-        window.studio.set_workspace("editor")
         window.navigate("import")
         page = window.import_page
         page.analysis_finished.connect(lambda _ok: QTimer.singleShot(300, step_import_preview))
@@ -204,8 +252,8 @@ def screens(width: int, height: int, scale: str) -> None:
         QTimer.singleShot(400, lambda: (grab("metadonnees_filaire"), step_upcoming()))
 
     def step_upcoming() -> None:
-        window.navigate("lspd")
-        QTimer.singleShot(300, lambda: (grab("atelier_lspd"), finish()))
+        window.navigate("liveries")
+        QTimer.singleShot(300, lambda: (grab("atelier_livrees"), finish()))
 
     def finish() -> None:
         session = window.controller.session

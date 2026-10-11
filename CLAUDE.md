@@ -66,6 +66,19 @@ Ne pas utiliser `NoButtons` sur les QDoubleSpinBox (valeur invisible avec la feu
   sans Blender). Ne jamais promettre la jouabilité FiveM d'un véhicule modifié.
 - Détails : `docs/VEHICLE_EDITOR.md`.
 
+## Emergency Studio (v0.5)
+
+- `emergency/` (sans Qt) : `model.py` (services, profils, feux, motifs, sirènes, variantes,
+  `StudioState`), `equipment.py` (équipements procéduraux originaux, `EquipmentLibrary`),
+  `studio.py` (`EmergencyStudio`), `sirens.py` (tonalités synthétisées), `adapters.py` (export).
+- État dans `SceneGraph.documents["emergency"]`, modifié uniquement par `SetDocument` dans une
+  `CompositeCommand` ; table `documents` du `.lsfc` v5.
+- La prévisualisation lumineuse est une simulation viewport : ne jamais la présenter comme un
+  rendu en jeu. Aucun export ne garantit l'utilisation ELS / non-ELS en jeu ; un format non
+  supporté (ELS classique) est refusé avec explication.
+- Aucun son, logo ou modèle propriétaire ; services et marques fictifs.
+- Détails : `docs/EMERGENCY_STUDIO.md`.
+
 ## Architecture v0.2-v0.3 (src/lsfcars)
 
 - `scene/` : graphe (`graph.py`), transformations, matériaux, historique (`commands.py`),

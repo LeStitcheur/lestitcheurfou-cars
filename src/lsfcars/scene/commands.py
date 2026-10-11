@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 from collections.abc import Callable
 from dataclasses import dataclass, field
 
@@ -319,6 +320,29 @@ class SetGeometry(Command):
     def cost(self) -> int:  # seul le maillage « après » appartient en propre à cette étape
         after = self.meshes.get(self.after[1] or "") if self.after[0] is None else None
         return mesh_bytes(after) if after is not None else 0
+
+
+@dataclass
+class SetDocument(Command):
+    """Remplace un document d'extension (données JSON) ; ``None`` = document absent."""
+
+    key: str
+    before: dict | None
+    after: dict | None
+    label: str = "Modification"
+    kind: str = PROPERTY
+
+    def _apply(self, scene: SceneGraph, value: dict | None) -> None:
+        if value is None:
+            scene.documents.pop(self.key, None)
+        else:
+            scene.documents[self.key] = copy.deepcopy(value)
+
+    def redo(self, scene: SceneGraph) -> None:
+        self._apply(scene, self.after)
+
+    def undo(self, scene: SceneGraph) -> None:
+        self._apply(scene, self.before)
 
 
 @dataclass

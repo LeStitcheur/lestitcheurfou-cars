@@ -153,28 +153,6 @@ UPCOMING: tuple[Upcoming, ...] = (
         ),
     ),
     Upcoming(
-        "lspd",
-        "Personnalisation",
-        "Atelier LSPD",
-        "Configuration des véhicules de police.",
-        (
-            "Rampes lumineuses, gyrophares, sirènes",
-            "Push-bar, radios, équipements",
-            "Préréglages LSPD, BCSO, SAHP",
-        ),
-    ),
-    Upcoming(
-        "ems",
-        "Personnalisation",
-        "Atelier EMS / SAMD",
-        "Configuration des véhicules de secours.",
-        (
-            "Ambulances, VSAV, véhicules médicaux",
-            "Signalétique et équipements",
-            "Préréglages EMS / SAMD",
-        ),
-    ),
-    Upcoming(
         "configs",
         "Personnalisation",
         "Configurations",

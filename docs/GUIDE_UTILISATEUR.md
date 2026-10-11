@@ -1,4 +1,27 @@
-# Guide utilisateur — LeStitcheurFou Cars 0.4.0
+# Guide utilisateur — LeStitcheurFou Cars 0.5.0
+
+## Nouveautés 0.5 : Emergency Studio
+
+Référence complète : [EMERGENCY_STUDIO.md](EMERGENCY_STUDIO.md).
+
+1. Ouvrez un projet et importez un véhicule civil. Dans le Vehicle Editor, vérifiez les **axes
+   du véhicule** (sens de l'avant) : les zones de pose en dépendent.
+2. Ouvrez **Emergency Studio** (barre latérale, section Personnalisation).
+3. Onglet **Service** : choisissez le service (LSPD, BCSO, SAHP, EMS…) et le profil du véhicule,
+   puis **Créer la variante**. Le véhicule de base n'est jamais modifié.
+4. Onglet **Équipements** : choisissez un équipement et une zone (toit, calandre…) puis
+   **Ajouter**, ou glissez-le directement sur la carrosserie dans le viewport. **Paire** pose
+   l'équipement à gauche et à droite.
+5. Onglet **Éclairage** (à droite) : réglez couleur, intensité, portée et angle des feux ;
+   rangez-les dans des groupes.
+6. **Timeline lumineuse** (en bas) : créez un motif depuis un preset, cliquez sur les cases pour
+   allumer / éteindre un groupe à chaque étape, puis **Appliquer les modifications**.
+   **Aperçu lumineux** lance la simulation dans le viewport (ce n'est pas un rendu en jeu).
+7. Onglet **Configurations** : intérieur Police / EMS / Fire, sirènes, données de livrée,
+   contrôle Lore Friendly.
+8. Onglet **Export** : validez puis exportez vers `carcols.meta`, MISS-ELS ou JSON. Les fichiers
+   produits sont des données préparatoires : leur fonctionnement en jeu n'est pas garanti.
+9. Enregistrez (Ctrl+S) : variantes, équipements, feux et motifs sont conservés dans le `.lsfc`.
 
 ## Nouveautés 0.4 : Vehicle Editor
 

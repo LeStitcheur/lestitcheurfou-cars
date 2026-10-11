@@ -33,6 +33,7 @@ log = get_logger(__name__)
 # Constantes OpenGL (PySide6 ne les expose pas).
 GL_POINTS, GL_LINES, GL_TRIANGLES = 0x0000, 0x0001, 0x0004
 GL_PROGRAM_POINT_SIZE = 0x8642
+GL_POINT_SPRITE = 0x8861  # profil de compatibilité : nécessaire à gl_PointCoord
 GL_UNSIGNED_BYTE, GL_UNSIGNED_INT, GL_FLOAT = 0x1401, 0x1405, 0x1406
 GL_DEPTH_TEST, GL_BLEND, GL_MULTISAMPLE = 0x0B71, 0x0BE2, 0x809D
 GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA = 0x0302, 0x0303
@@ -129,10 +130,17 @@ void main() {
 
 LINE_FS = """
 in vec4 vColor; in vec3 vWorld;
-uniform vec4 uColor; uniform vec3 uFadeCenter; uniform float uFadeRadius;
+uniform vec4 uColor; uniform vec3 uFadeCenter; uniform float uFadeRadius; uniform float uPointStyle;
 out vec4 fragColor;
 void main() {
     vec4 c = uColor.a > 0.0 ? uColor : vColor;
+    if (uPointStyle > 0.5) {  // points ronds (1) ou halo doux (2)
+        vec2 d = gl_PointCoord - vec2(0.5);
+        float r2 = dot(d, d);
+        if (r2 > 0.25) discard;
+        if (uPointStyle > 1.5) c.a *= pow(1.0 - r2 * 4.0, 2.0);
+        else c.a *= smoothstep(0.25, 0.18, r2);
+    }
     if (uFadeRadius > 0.0) {
         float d = length(vWorld.xz - uFadeCenter.xz);
         c.a *= 1.0 - smoothstep(uFadeRadius * 0.35, uFadeRadius, d);
@@ -202,6 +210,7 @@ class Overlay:
     triangles: np.ndarray | None = None
     point_size: float = 6.0
     xray: bool = False
+    point_style: str = "round"  # square / round / glow
 
 
 @dataclass
@@ -280,6 +289,7 @@ class Renderer:
         self.info: dict[str, str] = {}
         self.last_frame_ms = 0.0
         self._fn = None
+        self._compat = True
         self._mesh_prog: QOpenGLShaderProgram | None = None
         self._line_prog: QOpenGLShaderProgram | None = None
         self._bg_prog: QOpenGLShaderProgram | None = None
@@ -300,6 +310,7 @@ class Renderer:
         version = (fmt.majorVersion(), fmt.minorVersion())
         fn = context.functions()
         self._fn = fn
+        self._compat = fmt.profile() != fmt.OpenGLContextProfile.CoreProfile
         self.info = {
             "Fournisseur": fn.glGetString(GL_VENDOR) or "?",
             "Moteur de rendu": fn.glGetString(GL_RENDERER) or "?",
@@ -541,6 +552,8 @@ class Renderer:
             fn.glDepthFunc(GL_LEQUAL)
         fn.glDepthMask(GL_FALSE)
         fn.glEnable(GL_PROGRAM_POINT_SIZE)
+        if self._compat:
+            fn.glEnable(GL_POINT_SPRITE)
         for data, mode in (
             (overlay.triangles, GL_TRIANGLES),
             (overlay.lines, GL_LINES),
@@ -551,9 +564,12 @@ class Renderer:
             gpu = self._upload_lines(np.ascontiguousarray(data, np.float32))
             self._line_uniforms(view, proj, np.eye(4), None)
             self._line_prog.setUniformValue1f("uPointSize", float(overlay.point_size))
+            style = {"round": 1.0, "glow": 2.0}.get(overlay.point_style, 0.0) if mode == GL_POINTS else 0.0
+            self._line_prog.setUniformValue1f("uPointStyle", style)
             self._draw_arrays(gpu, mode)
             gpu.destroy()
         self._line_prog.setUniformValue1f("uPointSize", 1.0)
+        self._line_prog.setUniformValue1f("uPointStyle", 0.0)
         fn.glDepthMask(GL_TRUE)
         fn.glDepthFunc(GL_LESS)
         fn.glEnable(GL_DEPTH_TEST)

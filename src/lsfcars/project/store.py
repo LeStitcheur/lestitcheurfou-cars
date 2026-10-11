@@ -16,6 +16,10 @@ depuis la bibliothèque, compressée en npz), colonne ``materials.extra`` (carte
 preset, shader GTA V indicatif) et réglages de l'éditeur dans ``meta.editor``. Les points
 d'ancrage sont des nœuds de type ``anchor`` ; variantes et rôles de composants sont dans
 ``nodes.extra``.
+
+Format 5 (v0.5) : table ``documents`` (documents d'extension JSON). Le document ``emergency``
+contient les variantes d'urgence, sources lumineuses, groupes, motifs, profils de sirènes,
+configurations intérieures, données de livrée et profils de véhicules personnalisés.
 """
 
 from __future__ import annotations
@@ -53,7 +57,7 @@ log = get_logger(__name__)
 
 PROJECT_EXTENSION = ".lsfc"
 FORMAT_ID = APP_ID
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 5
 
 _SCHEMA = """
 CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
@@ -78,6 +82,7 @@ CREATE TABLE resources (
     imported_at TEXT, manifest TEXT NOT NULL
 );
 CREATE TABLE meshes (key TEXT PRIMARY KEY, name TEXT NOT NULL, data BLOB NOT NULL);
+CREATE TABLE documents (key TEXT PRIMARY KEY, data TEXT NOT NULL);
 """
 
 _V2_TABLES = ("assets", "materials", "nodes", "thumbnail")
@@ -248,6 +253,7 @@ def save_project(project: Project, path: str | Path | None = None) -> Path:
     ]
     used = scene.used_mesh_keys()
     mesh_rows = [(k, m.name, mesh_to_bytes(m)) for k, m in scene.meshes.items() if k in used]
+    document_rows = [(k, json.dumps(v, ensure_ascii=False)) for k, v in scene.documents.items()]
     try:
         with closing(sqlite3.connect(tmp)) as conn:
             conn.executescript(_SCHEMA)
@@ -259,6 +265,7 @@ def save_project(project: Project, path: str | Path | None = None) -> Path:
             )
             conn.executemany("INSERT INTO materials VALUES (?,?,?,?,?,?,?,?,?)", material_rows)
             conn.executemany("INSERT INTO meshes VALUES (?,?,?)", mesh_rows)
+            conn.executemany("INSERT INTO documents VALUES (?,?)", document_rows)
             conn.executemany("INSERT INTO nodes VALUES (?,?,?,?,?,?,?,?,?,?,?,?)", node_rows)
             conn.executemany("INSERT INTO resources VALUES (?,?,?,?,?,?,?)", resource_rows)
             if project.thumbnail:
@@ -339,7 +346,16 @@ def _migrate_v3(conn: sqlite3.Connection) -> None:
     conn.execute("UPDATE meta SET value = '4' WHERE key = 'schema_version'")
 
 
-_MIGRATIONS = {1: _migrate_v1, 2: _migrate_v2, 3: _migrate_v3}
+def _migrate_v4(conn: sqlite3.Connection) -> None:
+    """v4 → v5 : documents d'extension (Emergency Studio)."""
+    tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+    if "documents" not in tables:
+        statement = next(s for s in _SCHEMA.split(";") if s.strip().startswith("CREATE TABLE documents "))
+        conn.execute(statement)
+    conn.execute("UPDATE meta SET value = '5' WHERE key = 'schema_version'")
+
+
+_MIGRATIONS = {1: _migrate_v1, 2: _migrate_v2, 3: _migrate_v3, 4: _migrate_v4}
 
 
 def load_project(path: str | Path) -> Project:
@@ -373,9 +389,18 @@ def load_project(path: str | Path) -> Project:
             thumb = conn.execute("SELECT png FROM thumbnail WHERE id = 1").fetchone()
             resource_rows = conn.execute("SELECT * FROM resources").fetchall()
             mesh_rows = conn.execute("SELECT key, name, data FROM meshes").fetchall()
+            document_rows = conn.execute("SELECT key, data FROM documents").fetchall()
     except (sqlite3.DatabaseError, ValueError) as exc:
         raise ProjectError(f"« {path.name} » est illisible ou corrompu : {exc}") from exc
     project = _build_project(path, meta, assets, materials, nodes, thumb[0] if thumb else None)
+    for key, data in document_rows:
+        try:
+            value = json.loads(data)
+        except json.JSONDecodeError:
+            log.warning("Document « %s » illisible dans %s, ignoré", key, path.name)
+            continue
+        if isinstance(value, dict):
+            project.scene.documents[key] = value
     for key, name, data in mesh_rows:
         try:
             project.scene.meshes[key] = mesh_from_bytes(name, data)
