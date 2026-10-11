@@ -178,9 +178,7 @@ class MainWindow(QMainWindow):
     def _build_actions(self) -> None:
         a = self._action
         ctl = self.controller
-        self.act_new = a(
-            "Nouveau véhicule…", self.new_project, QKeySequence.StandardKey.New, "plus"
-        )
+        self.act_new = a("Nouveau véhicule…", self.new_project, QKeySequence.StandardKey.New, "plus")
         self.act_open = a(
             "Ouvrir un projet…", self.open_project, QKeySequence.StandardKey.Open, "folder-open"
         )
@@ -193,9 +191,7 @@ class MainWindow(QMainWindow):
         self.act_redo = a("Rétablir", ctl.redo, "Ctrl+Y", "redo-2")
         self.act_redo_alt = a("Rétablir", ctl.redo, "Ctrl+Shift+Z")
         self.act_duplicate = a("Dupliquer", ctl.duplicate_selected, "Ctrl+D", "copy-plus")
-        self.act_delete = a(
-            "Supprimer", self.delete_selection, QKeySequence.StandardKey.Delete, "trash-2"
-        )
+        self.act_delete = a("Supprimer", self.delete_selection, QKeySequence.StandardKey.Delete, "trash-2")
         self.act_group = a("Grouper", ctl.group_selected, "Ctrl+G", "group")
         self.act_ungroup = a("Dégrouper", ctl.ungroup_selected, "Ctrl+Shift+G", "ungroup")
         self.act_rename = a("Renommer", self._rename_active, "F2", "pencil")
@@ -241,15 +237,11 @@ class MainWindow(QMainWindow):
         self.topbar.settings_requested.connect(lambda: self.navigate("settings"))
         self.topbar.notifications_requested.connect(self._show_notifications)
         self.topbar.search_activated.connect(self._search)
-        self.notifications.changed.connect(
-            lambda: self.topbar.set_unread(self.notifications.unread)
-        )
+        self.notifications.changed.connect(lambda: self.topbar.set_unread(self.notifications.unread))
         ctl.notify.connect(lambda title, msg, level: self.notify(title, msg, level, 1800))
         ctl.state_changed.connect(self._update_state)
         ctl.session_changed.connect(self._update_search)
-        ctl.scene_changed.connect(
-            lambda kind: self._update_search() if kind == "structure" else None
-        )
+        ctl.scene_changed.connect(lambda kind: self._update_search() if kind == "structure" else None)
         ctl.import_finished.connect(self._on_import_finished)
         for page in (self.dashboard, self.projects_page, self.recent_page):
             page.open_requested.connect(self.open_project)
@@ -282,9 +274,7 @@ class MainWindow(QMainWindow):
         self.settings.sidebar_collapsed = collapsed
         self.topbar.set_sidebar_collapsed(collapsed)
 
-    def notify(
-        self, title: str, message: str = "", level: str = "info", duration_ms: int = 4200
-    ) -> None:
+    def notify(self, title: str, message: str = "", level: str = "info", duration_ms: int = 4200) -> None:
         self.notifications.notify(title, message, level, duration_ms)
 
     def _show_notifications(self) -> None:
@@ -313,9 +303,7 @@ class MainWindow(QMainWindow):
 
     def _search(self, text: str) -> None:
         entries = self._search_entries()
-        match = entries.get(text) or next(
-            (v for k, v in entries.items() if text.lower() in k.lower()), None
-        )
+        match = entries.get(text) or next((v for k, v in entries.items() if text.lower() in k.lower()), None)
         if match is None:
             self.notify("Aucun résultat", f"Rien ne correspond à « {text} ».", "warning")
             return
@@ -431,9 +419,7 @@ class MainWindow(QMainWindow):
         self.notify("Projet enregistré", path.name, "success", 2500)
         return True
 
-    def save_project_as(
-        self, parent_dir: str | Path | None = None, name: str | None = None
-    ) -> bool:
+    def save_project_as(self, parent_dir: str | Path | None = None, name: str | None = None) -> bool:
         session = self.controller.session
         if session is None:
             return False
@@ -525,16 +511,12 @@ class MainWindow(QMainWindow):
             if not self.new_project():
                 return False
         if path is None:
-            selected, _ = QFileDialog.getOpenFileName(
-                self, "Importer un modèle 3D", "", file_dialog_filter()
-            )
+            selected, _ = QFileDialog.getOpenFileName(self, "Importer un modèle 3D", "", file_dialog_filter())
             if not selected:
                 return False
             path = selected
         if self.controller.import_model_async(path) is None:
-            self.notify(
-                "Import en cours", "Patientez jusqu'à la fin de l'import actuel.", "warning"
-            )
+            self.notify("Import en cours", "Patientez jusqu'à la fin de l'import actuel.", "warning")
             return False
         self.navigate("studio")
         self.studio.bottom.setCurrentIndex(1)
@@ -605,9 +587,7 @@ class MainWindow(QMainWindow):
     def _on_setting(self, key: str) -> None:
         if key == "compact":
             apply_design(QApplication.instance(), self.settings.compact)
-            self.notify(
-                "Mode compact", "Certains espacements s'appliqueront au prochain démarrage.", "info"
-            )
+            self.notify("Mode compact", "Certains espacements s'appliqueront au prochain démarrage.", "info")
         elif key == "autosave":
             self.controller.set_autosave_interval(self.settings.autosave_minutes)
         elif key == "layout_reset":

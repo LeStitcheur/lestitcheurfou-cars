@@ -131,9 +131,7 @@ class ProjectSession:
             for model in [
                 n
                 for n in self.scene.walk()
-                if n.kind is NodeKind.MODEL
-                and n.asset_id == asset.id
-                and not self.scene.children(n.id)
+                if n.kind is NodeKind.MODEL and n.asset_id == asset.id and not self.scene.children(n.id)
             ]:
                 self._expand_model(model, result)
 
@@ -180,7 +178,7 @@ class ProjectSession:
         for key, mesh in result.meshes.items():
             self.geometry[(asset.id, key)] = mesh
 
-        root = SceneNode(self.scene.unique_name(source.stem), NodeKind.MODEL, asset_id=asset.id)
+        root = SceneNode(self.scene.unique_name(source.name), NodeKind.MODEL, asset_id=asset.id)
         snapshots, materials = self._snapshots_from_import(result, root.id, asset.id)
         command = InsertNodes(
             [root.snapshot(), *snapshots],
@@ -221,10 +219,8 @@ class ProjectSession:
                 transform=node.transform.copy(),
                 asset_id=asset_id if node.mesh_key else None,
                 mesh_key=node.mesh_key,
-                material_id=materials[node.material_key].id
-                if node.material_key in materials
-                else None,
-                parent_id=ids[node.parent_key] if node.parent_key in ids else root_id,
+                material_id=materials[node.material_key].id if node.material_key in materials else None,
+                parent_id=ids.get(node.parent_key, root_id),
                 id=ids[node.key],
             ).snapshot()
             snapshots.append(snapshot)
@@ -407,9 +403,7 @@ class ProjectSession:
             self.stack.push(MoveNodes(targets, parent_id))
 
     # --- Matériaux ----------------------------------------------------------
-    def create_material(
-        self, name: str = "Nouveau matériau", based_on: Material | None = None
-    ) -> Material:
+    def create_material(self, name: str = "Nouveau matériau", based_on: Material | None = None) -> Material:
         material = based_on.copy() if based_on else Material(name)
         material.name = name
         self.stack.push(AddMaterial(material))
@@ -424,9 +418,7 @@ class ProjectSession:
         before = {k: material.properties()[k] for k in properties}
         if before == properties:
             return
-        self.stack.push(
-            SetMaterialProperties(material_id, before, dict(properties), "Matériau", merge_key)
-        )
+        self.stack.push(SetMaterialProperties(material_id, before, dict(properties), "Matériau", merge_key))
 
     def assign_material(self, node_ids: Iterable[str], material_id: str | None) -> None:
         targets = [

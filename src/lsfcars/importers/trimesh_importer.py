@@ -109,9 +109,7 @@ class TrimeshImporter:
     def available(self) -> tuple[bool, str]:
         return True, "Intégré"
 
-    def load(
-        self, path: Path, progress: Progress = no_progress, fmt: str | None = None
-    ) -> ImportResult:
+    def load(self, path: Path, progress: Progress = no_progress, fmt: str | None = None) -> ImportResult:
         import trimesh  # import différé : coûteux au démarrage
 
         path = Path(path)
@@ -189,8 +187,7 @@ class TrimeshImporter:
         )
         textures = sum(1 for m in materials.values() if m.texture_png)
         log.info(
-            "Modèle lu : %s (%d nœuds, %d maillages, %d triangles, %d matériaux, %d textures)"
-            " en %.0f ms",
+            "Modèle lu : %s (%d nœuds, %d maillages, %d triangles, %d matériaux, %d textures) en %.0f ms",
             path.name,
             len(nodes),
             len(meshes),

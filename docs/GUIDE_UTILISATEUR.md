@@ -1,4 +1,29 @@
-# Guide utilisateur — LeStitcheurFou Cars 0.1.0
+# Guide utilisateur — LeStitcheurFou Cars 0.2.0
+
+## Nouveautés 0.2 en bref
+
+- **Navigation** : sidebar à gauche (Ctrl+B pour la réduire), recherche Ctrl+K, menu
+  **Fichier** dans la barre de titre. Les entrées marquées d'un point ambre sont « à venir ».
+- **Studio 3D** : explorateur de scène à gauche, viewport au centre, propriétés à droite,
+  statistiques / progression / journal en bas. Les séparateurs se déplacent à la souris et
+  l'agencement est mémorisé.
+- **Outils du viewport** (barre flottante) : Q sélection, W déplacer, E pivoter, R échelle
+  (Ctrl pendant le glissement : magnétisme) ; Z change le mode solide / filaire / matériaux ;
+  pavé 5 orthographique ; pavé 1/3/7 (Ctrl : vue opposée) ; F centrer ; caméra libre :
+  bouton caméra puis ZQSD/WASD + clic droit, E/Espace monter, C descendre.
+- **Sélection** : clic sur une pièce, Ctrl+clic pour ajouter/retirer ; dans l'explorateur,
+  Maj/Ctrl+clic. F2 renommer, Ctrl+D dupliquer, Ctrl+G grouper, Suppr supprimer (confirmé),
+  Ctrl+Z / Ctrl+Y annuler / rétablir.
+- **Matériaux** : onglet Matériau des propriétés ou page Matériaux. Les réglages s'affichent
+  immédiatement en mode Matériaux.
+- **Projets** : Ctrl+S enregistrer, Ctrl+Maj+S enregistrer sous ; sauvegarde automatique
+  (Paramètres) et proposition de restauration au démarrage après une interruption.
+- **Import** : page Importer un véhicule (glisser-déposer) ; FBX nécessite Blender installé.
+
+Les sections ci-dessous décrivent la version 0.1 et restent valables pour les principes
+(structure de projet, formats, journal).
+
+# Guide 0.1.0
 
 Ce guide décrit ce que la version 0.1.0 permet **réellement** de faire. Les ateliers marqués
 « Prévu » dans l'application ne sont pas encore disponibles.

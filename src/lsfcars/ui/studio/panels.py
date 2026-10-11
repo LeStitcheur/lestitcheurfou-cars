@@ -105,9 +105,7 @@ class SceneExplorer(QWidget):
         header = QHBoxLayout()
         header.addWidget(eyebrow("Scène"))
         header.addStretch(1)
-        self.group_button = LSIconButton(
-            "group", "Grouper la sélection", size=15, shortcut="Ctrl+G"
-        )
+        self.group_button = LSIconButton("group", "Grouper la sélection", size=15, shortcut="Ctrl+G")
         self.group_button.clicked.connect(controller.group_selected)
         self.dup_button = LSIconButton("copy-plus", "Dupliquer", size=15, shortcut="Ctrl+D")
         self.dup_button.clicked.connect(controller.duplicate_selected)
@@ -131,8 +129,7 @@ class SceneExplorer(QWidget):
         self.tree.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
         self.tree.setDragDropMode(QAbstractItemView.DragDropMode.InternalMove)
         self.tree.setEditTriggers(
-            QAbstractItemView.EditTrigger.EditKeyPressed
-            | QAbstractItemView.EditTrigger.DoubleClicked
+            QAbstractItemView.EditTrigger.EditKeyPressed | QAbstractItemView.EditTrigger.DoubleClicked
         )
         self.tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.tree.customContextMenuRequested.connect(self._context_menu)
@@ -165,9 +162,7 @@ class SceneExplorer(QWidget):
             | Qt.ItemFlag.ItemIsDropEnabled
         )
         dim = not scene.effective_visible(node.id)
-        item.setIcon(
-            0, icons.icon(KIND_ICONS[node.kind], t.TEXT_FAINT if dim else "#9aa8ba", size=15)
-        )
+        item.setIcon(0, icons.icon(KIND_ICONS[node.kind], t.TEXT_FAINT if dim else "#9aa8ba", size=15))
         item.setIcon(
             1,
             icons.icon(
@@ -206,9 +201,7 @@ class SceneExplorer(QWidget):
                     else:
                         parent_item.addChild(item)
                     add(item, node.id)
-                    item.setExpanded(
-                        node.id not in self._collapsed and node.kind is not NodeKind.MESH
-                    )
+                    item.setExpanded(node.id not in self._collapsed and node.kind is not NodeKind.MESH)
 
             add(None, None)
             triangles, _v, meshes = session.stats()
@@ -310,9 +303,7 @@ class SceneExplorer(QWidget):
         if node.kind is not NodeKind.MESH and session.scene.children(node.id):
             menu.addAction(icons.icon("ungroup"), "Dégrouper\tCtrl+Maj+G", ctl.ungroup_selected)
         if node.parent_id:
-            menu.addAction(
-                icons.icon("layers"), "Sortir du groupe", lambda: ctl.reparent(ids, None)
-            )
+            menu.addAction(icons.icon("layers"), "Sortir du groupe", lambda: ctl.reparent(ids, None))
         menu.addSeparator()
         menu.addAction(
             icons.icon("eye-off" if node.visible else "eye"),
@@ -413,8 +404,9 @@ class MaterialEditor(QWidget):
         self.new_button.clicked.connect(self._new_material)
         self.copy_button = LSIconButton("copy-plus", "Dupliquer le matériau", size=15)
         self.copy_button.clicked.connect(lambda: self._new_material(copy=True))
-        self.assign_button = LSButton("Affecter à la sélection", "secondary", "paint-bucket", True)
+        self.assign_button = LSButton("Affecter", "secondary", "paint-bucket", True)
         self.assign_button.clicked.connect(self.assign)
+        tooltip(self.assign_button, "Affecter ce matériau aux pièces sélectionnées")
         buttons.addWidget(self.new_button)
         buttons.addWidget(self.copy_button)
         buttons.addWidget(self.assign_button, 1)
@@ -428,9 +420,7 @@ class MaterialEditor(QWidget):
         form.setHorizontalSpacing(12)
         form.setVerticalSpacing(9)
         self.name = LSInput()
-        self.name.editingFinished.connect(
-            lambda: self.set_properties({"name": self.name.text().strip()})
-        )
+        self.name.editingFinished.connect(lambda: self.set_properties({"name": self.name.text().strip()}))
         self.color_button = QPushButton()
         self.color_button.setFixedHeight(28)
         self.color_button.clicked.connect(self._pick_color)
@@ -525,9 +515,7 @@ class MaterialEditor(QWidget):
         self.roughness.set_value(material.roughness)
         self.metallic.set_value(material.metallic)
         self.opacity.set_value(material.opacity)
-        self.texture_label.setText(
-            material.texture.split("/")[-1] if material.texture else "Aucune"
-        )
+        self.texture_label.setText(material.texture.split("/")[-1] if material.texture else "Aucune")
         self.clear_texture.setEnabled(bool(material.texture))
         users = len(session.scene.material_users(material.id)) if session else 0
         self.users.setText(f"Utilisé par {users} maillage(s)")
@@ -553,9 +541,7 @@ class MaterialEditor(QWidget):
         material = self.material()
         if material is None:
             return
-        color = QColorDialog.getColor(
-            QColor.fromRgbF(*material.base_color), self, "Couleur de base"
-        )
+        color = QColorDialog.getColor(QColor.fromRgbF(*material.base_color), self, "Couleur de base")
         if color.isValid():
             self.set_properties(
                 {
@@ -583,9 +569,7 @@ class MaterialEditor(QWidget):
         if session is None:
             return
         base = self.material() if copy else None
-        material = session.create_material(
-            f"{base.name} (copie)" if base else "Nouveau matériau", base
-        )
+        material = session.create_material(f"{base.name} (copie)" if base else "Nouveau matériau", base)
         self.refresh()
         self.select.select_data(material.id)
 
@@ -652,9 +636,7 @@ class PropertiesPanel(QWidget):
         self.active_info = label("", "faint", wrap=True)
         tl.addWidget(self.active_info)
         self.position = LSPropertyField("Position", suffix=" m", step=0.05)
-        self.rotation = LSPropertyField(
-            "Rotation", minimum=-360, maximum=360, step=5, decimals=1, suffix="°"
-        )
+        self.rotation = LSPropertyField("Rotation", minimum=-360, maximum=360, step=5, decimals=1, suffix="°")
         self.scale = LSPropertyField("Échelle", minimum=0.001, maximum=1000, step=0.05)
         for name, field in (
             ("translation", self.position),
@@ -674,8 +656,7 @@ class PropertiesPanel(QWidget):
         tl.addWidget(reset)
         tl.addWidget(
             label(
-                "Astuce : glissez horizontalement sur X / Y / Z pour ajuster, "
-                "Maj pour un réglage fin.",
+                "Astuce : glissez horizontalement sur X / Y / Z pour ajuster, Maj pour un réglage fin.",
                 "faint",
                 wrap=True,
             )
@@ -799,9 +780,7 @@ class PropertiesPanel(QWidget):
                 values = [values[changed[0]]] * 3
                 self.scale.set_value(values)
         setattr(transform, field_name, list(values))
-        self.controller.apply_transforms(
-            {node.id: transform}, ("panel", field_name, node.id, self._serial)
-        )
+        self.controller.apply_transforms({node.id: transform}, ("panel", field_name, node.id, self._serial))
 
     def _rename(self) -> None:
         node = self.active()

@@ -5,7 +5,11 @@
 
 Atelier Windows de création, d'adaptation et d'export de véhicules **Lore Friendly** pour **GTA V / FiveM**.
 
-> Statut : **v0.1.0 — fondations**. Voir [CHANGELOG.md](CHANGELOG.md) pour ce qui fonctionne réellement aujourd'hui.
+> Statut : **v0.2.0 — studio 3D interactif**, identité de la suite LeStitcheur.
+> Voir [CHANGELOG.md](CHANGELOG.md) pour ce qui fonctionne réellement aujourd'hui.
+
+![Tableau de bord](docs/screenshots/1920x1080@1_tableau_de_bord.png)
+![Studio 3D](docs/screenshots/1920x1080@1_studio_3d.png)
 
 ## Vision
 
@@ -21,19 +25,21 @@ LeStitcheurFou Cars a pour objectif de permettre de :
 
 Tous les types de véhicules sont prévus : voitures, SUV, motos, camions, bateaux, hélicoptères, aéronefs.
 
-## Fonctionnalités de la v0.1.0
+## Fonctionnalités de la v0.2.0
 
 | Fonction | État |
 |---|---|
-| Interface PySide6 en français, thème sombre / bleu électrique | ✅ |
-| Gestionnaire de projets (création, ouverture, projets récents) | ✅ |
-| Sauvegarde / réouverture de projet (fichier `.lsfc` SQLite) | ✅ |
-| Viewport 3D OpenGL (grille, éclairage, sélection) | ✅ |
-| Import de modèles GLB / glTF / OBJ / STL / PLY | ✅ |
-| Navigation 3D (orbite, panoramique, zoom, cadrage) | ✅ |
-| Explorateur d'objets et propriétés (transformations, visibilité) | ✅ |
-| Logs en direct et diagnostics système | ✅ |
-| Ateliers Livrées, LSPD/EMS, IA, Export FiveM | 🕓 interface réservée, non fonctionnels |
+| Identité LeStitcheur Control (sidebar noire, accents rouge/rose, fenêtre sans cadre) | ✅ |
+| Tableau de bord, projets, projets récents avec miniatures | ✅ |
+| Viewport : solide / filaire / matériaux, perspective / ortho, caméra orbitale et libre | ✅ |
+| Sélection multiple, gizmos translation / rotation / échelle, annuler / rétablir | ✅ |
+| Explorateur hiérarchique (recherche, masquage, verrouillage, regroupement) | ✅ |
+| Éditeur de matériaux (couleur, rugosité, métallicité, opacité, texture) | ✅ |
+| Import GLB / glTF / OBJ / STL / PLY, FBX via Blender, en arrière-plan | ✅ |
+| Projet `.lsfc` v2 : provenance, sauvegarde auto, récupération, enregistrer sous | ✅ |
+| Livrées, LSPD, EMS / SAMD, IA, Lore Friendly, Optimisation, Export FiveM | 🕓 « Bientôt », non fonctionnels |
+
+Design system : [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md).
 
 ## Installation (utilisateur)
 

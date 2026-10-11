@@ -27,7 +27,7 @@ class StudioPage(QWidget):
             panel.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
             panel.setStyleSheet("QWidget#LSStudioPanel { background: #11151a; }")
         self.explorer.setMinimumWidth(220)
-        self.properties.setMinimumWidth(320)
+        self.properties.setMinimumWidth(360)
 
         self.h_split = QSplitter(Qt.Orientation.Horizontal)
         self.h_split.setHandleWidth(1)

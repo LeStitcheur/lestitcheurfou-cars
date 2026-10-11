@@ -65,9 +65,7 @@ class LogPanel(QWidget):
         clear = QPushButton("Effacer")
         clear.clicked.connect(self.clear)
         open_folder = QPushButton("Ouvrir le dossier des logs")
-        open_folder.clicked.connect(
-            lambda: QDesktopServices.openUrl(QUrl.fromLocalFile(str(logs_dir())))
-        )
+        open_folder.clicked.connect(lambda: QDesktopServices.openUrl(QUrl.fromLocalFile(str(logs_dir()))))
         toolbar.addWidget(clear)
         toolbar.addWidget(open_folder)
         layout.addLayout(toolbar)

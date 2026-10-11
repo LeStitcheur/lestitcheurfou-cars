@@ -29,7 +29,22 @@ ruff check . ; ruff format --check .
 scripts\build_windows.ps1   # build dist\LeStitcheurFouCars.exe
 ```
 
-## Architecture (src/lsfcars)
+## Identité graphique
+
+Référence : LeStitcheur Control (`../lestitcheur`, `src/design.css`). Ne pas réintroduire le
+thème bleu de la v0.1. Toute couleur passe par `ui/design/tokens.py` ; voir `docs/DESIGN_SYSTEM.md`.
+Ne pas utiliser `NoButtons` sur les QDoubleSpinBox (valeur invisible avec la feuille de style).
+
+## Architecture v0.2 (src/lsfcars)
+
+- `scene/` : graphe (`graph.py`), transformations, matériaux, historique (`commands.py`),
+  sélection, caméra, gizmos (math pure), picking.
+- `importers/` : trimesh (GLB/glTF/OBJ/STL/PLY) et FBX via Blender ; formats GTA « prévus ».
+- `render/renderer.py` : rendu GL indépendant de l'UI ; `ui/viewport.py` : interaction seule.
+- `ui/design/` : design system ; `ui/pages/` ; `ui/studio/` (contrôleur, panneaux, page).
+- Toute modification de scène passe par `ProjectSession` → `UndoStack`.
+
+## Architecture v0.1 (historique)
 
 - `core/` : chemins, logs, diagnostics, paramètres — aucune dépendance Qt Widgets.
 - `project/` : modèle de projet, types de véhicules, persistance SQLite (`store.py`), projets récents.

@@ -145,11 +145,7 @@ class SceneGraph:
     def top_level(self, node_ids: list[str]) -> list[str]:
         """Retire les nœuds dont un ancêtre figure aussi dans la liste."""
         chosen = set(node_ids)
-        return [
-            i
-            for i in node_ids
-            if i in self.nodes and not any(a.id in chosen for a in self.ancestors(i))
-        ]
+        return [i for i in node_ids if i in self.nodes and not any(a.id in chosen for a in self.ancestors(i))]
 
     def unique_name(self, base: str) -> str:
         names = {n.name for n in self.nodes.values()}

@@ -106,9 +106,7 @@ def create_project(
 ) -> Project:
     """Crée le dossier du projet, son dossier ``assets`` et le fichier ``.lsfc``."""
     folder = _prepare_folder(parent_dir, name)
-    project = Project(
-        name=name.strip(), vehicle_type=vehicle_type, role=role, description=description
-    )
+    project = Project(name=name.strip(), vehicle_type=vehicle_type, role=role, description=description)
     project.file_path = folder / f"{folder.name}{PROJECT_EXTENSION}"
     save_project(project)
     log.info("Projet créé : %s", project.file_path)
@@ -207,9 +205,7 @@ def save_project(project: Project, path: str | Path | None = None) -> Path:
     except (sqlite3.Error, OSError) as exc:
         tmp.unlink(missing_ok=True)
         raise ProjectError(f"Échec de l'enregistrement de « {target.name} » : {exc}") from exc
-    log.info(
-        "Projet enregistré : %s (%d nœuds, %d assets)", target, len(scene), len(project.assets)
-    )
+    log.info("Projet enregistré : %s (%d nœuds, %d assets)", target, len(scene), len(project.assets))
     return target
 
 
@@ -222,9 +218,7 @@ def _migrate_v1(conn: sqlite3.Connection) -> None:
         "SELECT id, name, asset_path, transform, visible FROM scene_objects ORDER BY position"
     ).fetchall()
     new_tables = [
-        s
-        for s in _SCHEMA.split(";")
-        if s.strip() and not s.strip().startswith("CREATE TABLE meta ")
+        s for s in _SCHEMA.split(";") if s.strip() and not s.strip().startswith("CREATE TABLE meta ")
     ]
     conn.executescript(";".join(new_tables) + ";")
     for position, (obj_id, name, asset_path, transform, visible) in enumerate(rows):
@@ -423,9 +417,7 @@ def read_summary(path: str | Path) -> ProjectSummary | None:
             meta = dict(conn.execute("SELECT key, value FROM meta").fetchall())
             if meta.get("format") != FORMAT_ID:
                 return None
-            tables = {
-                r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
-            }
+            tables = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
             if "assets" in tables:
                 assets = conn.execute("SELECT COUNT(*) FROM assets").fetchone()[0]
                 nodes = conn.execute("SELECT COUNT(*) FROM nodes").fetchone()[0]

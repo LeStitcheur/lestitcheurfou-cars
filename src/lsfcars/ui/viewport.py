@@ -152,9 +152,7 @@ class Viewport3D(QOpenGLWidget):
 
         self.stats_label = QLabel(self)
         self.stats_label.setObjectName("LSViewportHint")
-        self.empty_label = QLabel(
-            "Importez un modèle 3D pour commencer\n(GLB, glTF, OBJ, FBX…)", self
-        )
+        self.empty_label = QLabel("Importez un modèle 3D pour commencer\n(GLB, glTF, OBJ, FBX…)", self)
         self.empty_label.setObjectName("LSViewportHint")
         self.empty_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.error_label = QLabel(self)
@@ -399,11 +397,7 @@ class Viewport3D(QOpenGLWidget):
             return None
         scene = self.session.scene
         bounds = self.session.world_bounds(targets, only_visible=False)
-        pivot = (
-            (bounds[0] + bounds[1]) / 2
-            if bounds is not None
-            else scene.world_matrix(targets[-1])[:3, 3]
-        )
+        pivot = (bounds[0] + bounds[1]) / 2 if bounds is not None else scene.world_matrix(targets[-1])[:3, 3]
         axes = np.eye(3)
         if self.tool is GizmoMode.SCALE:  # axes locaux de l'élément actif
             basis = scene.world_matrix(targets[-1])[:3, :3]

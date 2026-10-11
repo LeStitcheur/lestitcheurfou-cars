@@ -62,15 +62,11 @@ class NewProjectDialog(LSModal):
         self.preview = label("", "faint", wrap=True)
         self.body.addWidget(self.preview)
         self.add_button("Annuler")
-        self.create_button = self.add_button(
-            "Créer le projet", "primary", "ok", "plus", accept=True
-        )
+        self.create_button = self.add_button("Créer le projet", "primary", "ok", "plus", accept=True)
         self._validate()
 
     def _browse(self) -> None:
-        folder = QFileDialog.getExistingDirectory(
-            self, "Emplacement du projet", self.location_edit.text()
-        )
+        folder = QFileDialog.getExistingDirectory(self, "Emplacement du projet", self.location_edit.text())
         if folder:
             self.location_edit.setText(folder)
 

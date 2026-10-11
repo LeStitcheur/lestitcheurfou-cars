@@ -168,9 +168,7 @@ class LSBadge(QLabel):
 class LSIconBox(QLabel):
     """Petite icône dans un conteneur coloré arrondi (cartes statistiques, en-têtes)."""
 
-    def __init__(
-        self, icon: str, tint: str = "red", size: int = 34, parent: QWidget | None = None
-    ) -> None:
+    def __init__(self, icon: str, tint: str = "red", size: int = 34, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         background, foreground, _ = t.tint(tint)
         self.setFixedSize(size, size)
@@ -346,21 +344,15 @@ class LSStatsGrid(QFrame):
 
 
 class LSInput(QLineEdit):
-    def __init__(
-        self, placeholder: str = "", icon: str | None = None, parent: QWidget | None = None
-    ) -> None:
+    def __init__(self, placeholder: str = "", icon: str | None = None, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setPlaceholderText(placeholder)
         if icon:
-            self.addAction(
-                icons.icon(icon, t.TEXT_MUTED, size=15), QLineEdit.ActionPosition.LeadingPosition
-            )
+            self.addAction(icons.icon(icon, t.TEXT_MUTED, size=15), QLineEdit.ActionPosition.LeadingPosition)
 
 
 class LSSelect(QComboBox):
-    def __init__(
-        self, items: Sequence[tuple[str, object]] = (), parent: QWidget | None = None
-    ) -> None:
+    def __init__(self, items: Sequence[tuple[str, object]] = (), parent: QWidget | None = None) -> None:
         super().__init__(parent)
         for text, data in items:
             self.addItem(text, data)
@@ -688,9 +680,7 @@ class LSNotification(QFrame):
 
     closed = Signal()
 
-    def __init__(
-        self, notification: Notification, parent: QWidget, duration_ms: int = 4200
-    ) -> None:
+    def __init__(self, notification: Notification, parent: QWidget, duration_ms: int = 4200) -> None:
         super().__init__(parent)
         self.setObjectName("LSToast")
         self.setProperty("level", notification.level)

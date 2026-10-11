@@ -57,9 +57,7 @@ class OrbitCamera:
     # --- Position et repère -------------------------------------------------
     def _offset(self) -> np.ndarray:
         yaw, pitch = math.radians(self.yaw), math.radians(self.pitch)
-        return np.array(
-            [math.cos(pitch) * math.sin(yaw), math.sin(pitch), math.cos(pitch) * math.cos(yaw)]
-        )
+        return np.array([math.cos(pitch) * math.sin(yaw), math.sin(pitch), math.cos(pitch) * math.cos(yaw)])
 
     def eye(self) -> np.ndarray:
         return self.target + self._offset() * self.distance

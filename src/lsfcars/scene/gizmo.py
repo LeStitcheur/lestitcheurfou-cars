@@ -102,8 +102,7 @@ def hit_test(
         if mode is GizmoMode.ROTATE:
             screen = project(camera, ring_points(pivot, axis, size * 0.85), width, height)
             distance = min(
-                _segment_distance(p, screen[i], screen[(i + 1) % len(screen)])
-                for i in range(len(screen))
+                _segment_distance(p, screen[i], screen[(i + 1) % len(screen)]) for i in range(len(screen))
             )
         else:
             ends = np.array([pivot + axis * size * 0.15, pivot + axis * size])

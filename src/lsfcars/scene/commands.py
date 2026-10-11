@@ -229,9 +229,7 @@ class MoveNodes(Command):
         for node_id in scene.top_level(self.targets):
             node = scene.nodes[node_id]
             world = scene.world_matrix(node_id)
-            self.before.append(
-                (node_id, node.parent_id, scene.index_of(node_id), node.transform.copy())
-            )
+            self.before.append((node_id, node.parent_id, scene.index_of(node_id), node.transform.copy()))
             scene.move(node_id, self.new_parent_id)
             node.transform = decompose(inverse @ world)
 

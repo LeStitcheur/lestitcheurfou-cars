@@ -55,9 +55,7 @@ class LSTopbar(QWidget):
         layout.setContentsMargins(10, 0, 0, 0)
         layout.setSpacing(10)
 
-        self.sidebar_button = LSIconButton(
-            "panel-left-close", "Réduire la barre latérale", shortcut="Ctrl+B"
-        )
+        self.sidebar_button = LSIconButton("panel-left-close", "Réduire la barre latérale", shortcut="Ctrl+B")
         self.sidebar_button.clicked.connect(self.toggle_sidebar)
         layout.addWidget(self.sidebar_button)
 

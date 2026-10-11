@@ -154,9 +154,7 @@ class DashboardPage(Page):
         )
         self._projects_dir = projects_dir
         today = datetime.now()
-        self.date_label = label(
-            f"{today.day} {FRENCH_MONTHS[today.month - 1]} {today.year}", "faint"
-        )
+        self.date_label = label(f"{today.day} {FRENCH_MONTHS[today.month - 1]} {today.year}", "faint")
         refresh = LSButton("Actualiser", "secondary", "refresh-cw")
         refresh.clicked.connect(self.refresh)
         self.header.actions.addWidget(self.date_label, 0, Qt.AlignmentFlag.AlignVCenter)

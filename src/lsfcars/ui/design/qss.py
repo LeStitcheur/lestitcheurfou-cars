@@ -185,7 +185,8 @@ QTreeView, QListView, QTreeWidget, QListWidget, QTableView {{ background: transp
 QTreeView::item, QListView::item {{ padding: 4px 2px; border-radius: 6px; color: #c9d2dd; }}
 QTreeView::item:hover, QListView::item:hover {{ background: {t.HOVER}; }}
 QTreeView::item:selected, QListView::item:selected {{ background: rgba(255,65,87,0.14); color: {t.ACCENT_TEXT}; }}
-QTreeView::branch {{ background: transparent; }}
+QTreeView {{ show-decoration-selected: 0; }}
+QTreeView::branch, QTreeView::branch:selected {{ background: transparent; }}
 QHeaderView::section {{ background: transparent; color: {t.TEXT_FAINT}; border: none; padding: 4px; }}
 
 /* --- Panneaux ancrables -------------------------------------------------- */

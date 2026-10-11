@@ -45,24 +45,23 @@ def test_bounds_and_combined_bounds():
 
 def test_load_sample_glb(sample_glb):
     meshes = load_meshes(sample_glb)
-    assert len(meshes) == 12
-    assert sum(m.triangle_count for m in meshes) == 688
-    assert "carrosserie" in {m.name for m in meshes}
-    body = next(m for m in meshes if m.name == "carrosserie")
-    assert tuple(body.colors[0][:3]) == (30, 144, 255)  # bleu électrique conservé
+    assert len(meshes) == 15
+    assert sum(m.triangle_count for m in meshes) == 720
+    body = next(m for m in meshes if m.name == "caisse")
+    assert tuple(body.colors[0][:3]) == (214, 32, 52)  # rouge de marque conservé
     bmin, bmax = body.bounds
-    assert bmax[2] - bmin[2] == pytest.approx(4.4, abs=1e-3)  # longueur de la carrosserie
+    assert bmax[2] - bmin[2] == pytest.approx(4.6, abs=1e-3)  # longueur de la caisse
 
 
 def test_load_sample_obj_keeps_vertex_colors(sample_obj):
     meshes = load_meshes(sample_obj)
-    assert sum(m.triangle_count for m in meshes) == 688
+    assert sum(m.triangle_count for m in meshes) == 720
     unique_colors = {tuple(c) for m in meshes for c in m.colors}
     assert len(unique_colors) >= 4
 
 
 def test_unsupported_extension(tmp_path):
-    path = tmp_path / "modele.fbx"
+    path = tmp_path / "modele.blend"
     path.write_bytes(b"x")
     with pytest.raises(ModelLoadError, match="non pris en charge"):
         load_meshes(path)

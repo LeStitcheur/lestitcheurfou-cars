@@ -49,8 +49,8 @@ def find_blender() -> Path | None:
     if os.environ.get("LSFCARS_BLENDER"):
         candidates.append(Path(os.environ["LSFCARS_BLENDER"]))
     for root in (
-        os.environ.get("ProgramFiles", r"C:\Program Files"),
-        os.environ.get("ProgramFiles(x86)", ""),
+        os.environ.get("ProgramFiles", r"C:\Program Files"),  # noqa: SIM112 (casse Windows)
+        os.environ.get("ProgramFiles(x86)", ""),  # noqa: SIM112
     ):
         foundation = Path(root) / "Blender Foundation" if root else None
         if foundation and foundation.is_dir():
@@ -131,9 +131,7 @@ class FbxBlenderImporter:
                 tail = "\n".join(output[-6:])
                 raise ModelLoadError(f"Blender n'a pas pu convertir « {path.name} ».\n{tail}")
             progress(0.4, "Lecture du résultat converti")
-            result = TrimeshImporter().load(
-                target, lambda v, t: progress(0.4 + v * 0.6, t), fmt="fbx"
-            )
+            result = TrimeshImporter().load(target, lambda v, t: progress(0.4 + v * 0.6, t), fmt="fbx")
         result.source = path
         result.importer = f"{self.name} — {blender_version()}"
         result.notes.append(f"Converti en glTF par {blender_version()} (fichier d'origine intact)")

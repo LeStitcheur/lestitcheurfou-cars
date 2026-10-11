@@ -31,16 +31,84 @@ FONTS = {
     ),
 }
 
-ICONS = """
-activity ambulance arrow-up-right bell blocks box camera car check chevron-down chevron-right
-circle-check circle-x clock copy copy-plus cuboid download eye eye-off file-box folder
-folder-open frame gauge grid-3x3 group heart-pulse history home image import info layers
-layout-grid leaf loader-circle lock lock-open maximize-2 minus mouse-pointer-2 move move-3d
-orbit package paint-bucket palette panel-left-close panel-left-open pencil plus redo-2
-refresh-cw rotate-3d save scale-3d scan scroll-text search settings shapes shield siren
-sliders-horizontal sparkles square square-dashed sun trash-2 triangle-alert undo-2 ungroup
-upload video x
-""".split()
+ICONS = [
+    "activity",
+    "ambulance",
+    "arrow-up-right",
+    "bell",
+    "blocks",
+    "box",
+    "camera",
+    "car",
+    "check",
+    "chevron-down",
+    "chevron-right",
+    "circle-check",
+    "circle-x",
+    "clock",
+    "copy",
+    "copy-plus",
+    "cuboid",
+    "download",
+    "eye",
+    "eye-off",
+    "file-box",
+    "folder",
+    "folder-open",
+    "frame",
+    "gauge",
+    "grid-3x3",
+    "group",
+    "heart-pulse",
+    "history",
+    "home",
+    "image",
+    "import",
+    "info",
+    "layers",
+    "layout-grid",
+    "leaf",
+    "loader-circle",
+    "lock",
+    "lock-open",
+    "maximize-2",
+    "minus",
+    "mouse-pointer-2",
+    "move",
+    "move-3d",
+    "orbit",
+    "package",
+    "paint-bucket",
+    "palette",
+    "panel-left-close",
+    "panel-left-open",
+    "pencil",
+    "plus",
+    "redo-2",
+    "refresh-cw",
+    "rotate-3d",
+    "save",
+    "scale-3d",
+    "scan",
+    "scroll-text",
+    "search",
+    "settings",
+    "shapes",
+    "shield",
+    "siren",
+    "sliders-horizontal",
+    "sparkles",
+    "square",
+    "square-dashed",
+    "sun",
+    "trash-2",
+    "triangle-alert",
+    "undo-2",
+    "ungroup",
+    "upload",
+    "video",
+    "x",
+]
 
 ELEMENT = re.compile(r'\[\s*"(\w+)",\s*\{([^}]*)\}\s*\]')
 ATTRIBUTE = re.compile(r'(\w+):\s*"([^"]*)"')
@@ -71,9 +139,7 @@ def lucide_svg(js_source: str) -> str:
     elements = []
     for tag, raw_attributes in ELEMENT.findall(js_source):
         attributes = " ".join(
-            f'{_kebab(key)}="{value}"'
-            for key, value in ATTRIBUTE.findall(raw_attributes)
-            if key != "key"
+            f'{_kebab(key)}="{value}"' for key, value in ATTRIBUTE.findall(raw_attributes) if key != "key"
         )
         elements.append(f"<{tag} {attributes}/>")
     if not elements:

@@ -389,9 +389,7 @@ class Renderer:
                 self._textures[path] = None
             else:
                 flipped = (
-                    image.flipped(Qt.Orientation.Vertical)
-                    if hasattr(image, "flipped")
-                    else image.mirrored()
+                    image.flipped(Qt.Orientation.Vertical) if hasattr(image, "flipped") else image.mirrored()
                 )
                 texture = QOpenGLTexture(flipped.convertToFormat(QImage.Format.Format_RGBA8888))
                 texture.setMinificationFilter(QOpenGLTexture.Filter.LinearMipMapLinear)
@@ -475,9 +473,7 @@ class Renderer:
         for item in frame.items:
             if wire_only or item.selected:
                 gpu = self._edges(item.mesh)
-                self._line_uniforms(
-                    view, proj, item.model, SELECTION_EDGE if item.selected else WIRE_COLOR
-                )
+                self._line_uniforms(view, proj, item.model, SELECTION_EDGE if item.selected else WIRE_COLOR)
                 gpu.edge_vao.bind()
                 fn.glDrawElements(GL_LINES, gpu.edge_count, GL_UNSIGNED_INT, shiboken6.VoidPtr(0))
                 gpu.edge_vao.release()
@@ -552,9 +548,7 @@ class Renderer:
             basis[:3, 0] = side
             basis[:3, 1] = axis
             basis[:3, 2] = np.cross(side, axis)
-            model = (
-                mathutils.translation(gizmo.pivot) @ basis @ mathutils.scaling((gizmo.size,) * 3)
-            )
+            model = mathutils.translation(gizmo.pivot) @ basis @ mathutils.scaling((gizmo.size,) * 3)
             color = HOVER_COLOR if gizmo.hover == index else AXIS_COLORS[index]
             self._draw_item(DrawItem(handle, model, (*color, 1.0)))
         prog.release()

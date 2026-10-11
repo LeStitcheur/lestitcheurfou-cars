@@ -69,9 +69,7 @@ class ProjectsPage(Page):
         if recent_only:
             self.list = QListWidget()
             self.list.setMinimumHeight(320)
-            self.list.itemActivated.connect(
-                lambda item: self.open_requested.emit(Path(item.toolTip()))
-            )
+            self.list.itemActivated.connect(lambda item: self.open_requested.emit(Path(item.toolTip())))
             card = LSCard("Historique", "history")
             card.body.addWidget(self.list)
             clear = LSButton("Vider l'historique", "ghost", "trash-2", True)
@@ -93,9 +91,7 @@ class ProjectsPage(Page):
             self.list.clear()
             for path in recent.list_recent():
                 exists = path.is_file()
-                item = QListWidgetItem(
-                    f"{path.stem}{'' if exists else '  (introuvable)'}\n{path.parent}"
-                )
+                item = QListWidgetItem(f"{path.stem}{'' if exists else '  (introuvable)'}\n{path.parent}")
                 item.setToolTip(str(path))
                 if not exists:
                     item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEnabled)
@@ -109,9 +105,7 @@ class ProjectsPage(Page):
             f"Les nouveaux projets sont créés dans {folder}.",
             ("Nouveau véhicule", self.new_requested.emit),
         )
-        self.grid.set_projects(
-            known_projects(folder), lambda p: self.open_requested.emit(Path(p)), empty
-        )
+        self.grid.set_projects(known_projects(folder), lambda p: self.open_requested.emit(Path(p)), empty)
         self.location.setText(f"Dossier : {folder}")
 
 
@@ -192,9 +186,7 @@ class ImportPage(Page):
             texts.addWidget(label(name))
             texts.addWidget(label(detail, "faint", wrap=True))
             line.addLayout(texts, 1)
-            badge = LSBadge(
-                status, {"Disponible": "green", "Indisponible": "red"}.get(status, "amber")
-            )
+            badge = LSBadge(status, {"Disponible": "green", "Indisponible": "red"}.get(status, "amber"))
             self.status_badges[ext] = badge
             line.addWidget(badge)
             holder = QWidget()
@@ -407,9 +399,7 @@ class SettingsPage(Page):
         self.software.setChecked(settings.software_gl)
         self.software.toggled.connect(lambda v: setattr(self.settings, "software_gl", v))
         render.body.addWidget(self.software)
-        render.body.addWidget(
-            label("À activer uniquement si le pilote graphique pose problème.", "faint")
-        )
+        render.body.addWidget(label("À activer uniquement si le pilote graphique pose problème.", "faint"))
         self.body.addWidget(render)
         self.finish()
         self._update_blender_status()
@@ -430,9 +420,7 @@ class SettingsPage(Page):
             self.settings_changed.emit("projects_dir")
 
     def _browse_blender(self) -> None:
-        path, _ = QFileDialog.getOpenFileName(
-            self, "Emplacement de blender.exe", "", "Blender (blender.exe)"
-        )
+        path, _ = QFileDialog.getOpenFileName(self, "Emplacement de blender.exe", "", "Blender (blender.exe)")
         if path:
             self.blender.setText(path)
             self._blender()
@@ -485,6 +473,4 @@ class DiagnosticsPage(Page):
             ok, reason = importer.available()
             state = "disponible" if ok else "indisponible"
             lines.append(f"  {', '.join(importer.extensions)} : {state} ({reason})")
-        self.report.setPlainText(
-            diagnostics.format_report() + "\n\n[Importateurs]\n" + "\n".join(lines)
-        )
+        self.report.setPlainText(diagnostics.format_report() + "\n\n[Importateurs]\n" + "\n".join(lines))
