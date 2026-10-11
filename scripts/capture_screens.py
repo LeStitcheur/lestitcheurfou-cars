@@ -249,11 +249,96 @@ def screens(width: int, height: int, scale: str) -> None:
         page.right.setCurrentWidget(page.metadata)
         page.metadata.select_path("data/handling.meta")
         page.bottom.setCurrentIndex(0)
-        QTimer.singleShot(400, lambda: (grab("metadonnees_filaire"), step_upcoming()))
+        QTimer.singleShot(400, lambda: (grab("metadonnees_filaire"), step_livery()))
 
-    def step_upcoming() -> None:
+    def step_livery() -> None:
+        from lsfcars.livery.raster import BrushSettings
+        from lsfcars.project.session import ProjectSession
+
+        session = ProjectSession.create(tempfile.mkdtemp(prefix="lsfcars-livree-"), "Démo - Livrée")
+        session.import_model(ROOT / "samples" / "vehicule_livree.glb")
+        session.selection.clear()
+        window.controller.set_session(session)
+        page = window.livery
+        page.ensure_logos()
         window.navigate("liveries")
-        QTimer.singleShot(300, lambda: (grab("atelier_livrees"), finish()))
+        page.create_document(size=1024, template="lspd", unit="1-ADAM-12", name="LSPD Patrol")
+        studio = page.studio
+        paint = studio.require().active_variant.layers[0].id
+        studio.begin_stroke(paint, "#38BDF8", BrushSettings(size=16, hardness=0.9), symmetry=True, mode="3d")
+        for z in [1.9 - i * 0.12 for i in range(26)]:  # filet bleu électrique peint en 3D, symétrique
+            studio.stroke_3d([-3.0, 0.38 + 0.02 * abs(z), z], [1.0, 0.0, 0.0])
+        studio.end_stroke()
+        page.set_view_mode("split")
+        page.views.setSizes([620, 380])
+        page.viewport.camera.set_view(-32, 14)
+        page.viewport.frame_bounds(session.world_bounds())
+        page.viewport.camera.distance *= 0.8
+        page.refresh()
+        page.right.setCurrentIndex(0)
+        page.left.setCurrentIndex(0)
+        page.set_tool("brush")
+        QTimer.singleShot(600, lambda: (page.canvas.fit(), QTimer.singleShot(300, step_livery_capture)))
+
+    def step_livery_capture() -> None:
+        grab("livery_studio")
+        step_livery_paint()
+
+    def step_livery_paint() -> None:
+        page = window.livery
+        page.set_view_mode("3d")
+        page.right.setCurrentIndex(2)
+        viewport = page.viewport
+        surface = page.studio.surface()
+        w, h = viewport.width(), viewport.height()
+        spots = [(x * w / 10, y * h / 10) for y in range(3, 8) for x in range(3, 8)]
+        hit = next((p for p in spots if surface.raycast(*viewport.screen_ray(*p)) is not None), None)
+        if hit is not None:
+            page.tools.size.setValue(60)
+            page.hover(*hit)
+        QTimer.singleShot(500, lambda: (grab("livery_peinture_3d"), step_livery_uv()))
+
+    def step_livery_uv() -> None:
+        page = window.livery
+        page._hover = None
+        page.set_view_mode("uv")
+        page.canvas.show_seams = True
+        page.uv_panel.show_seams.setChecked(True)
+        studio = page.studio
+        text = next(layer for layer in studio.require().active_variant.walk() if layer.kind == "text")
+        page.select_layer(text.id)
+        page.set_tool("move")
+        page.right.setCurrentIndex(1)
+        page.left.setCurrentIndex(2)
+        page.bottom.setCurrentWidget(page.uv_panel)
+        page.uv_panel.refresh()
+        QTimer.singleShot(400, lambda: (page.canvas.fit(), QTimer.singleShot(300, step_livery_uv_capture)))
+
+    def step_livery_uv_capture() -> None:
+        grab("livery_uv_calques")
+        step_livery_variants()
+
+    def step_livery_variants() -> None:
+        page = window.livery
+        studio = page.studio
+        patrol = studio.require().active
+        studio.create_variant("EMS Rescue", "ems", "M-7")
+        page.set_view_mode("split")
+        page.canvas.show_seams = False
+        page.refresh()
+        page.right.setCurrentIndex(4)
+        page.variants.compare_with.select_data(patrol)
+        page.variants.compare()
+        page.left.setCurrentIndex(3)
+        page.bottom.setCurrentWidget(page.diagnostics)
+        page.diagnostics.refresh()
+        QTimer.singleShot(
+            600, lambda: (page.canvas.fit(), QTimer.singleShot(300, step_livery_variants_capture))
+        )
+
+    def step_livery_variants_capture() -> None:
+        grab("livery_variantes")
+        finish()
 
     def finish() -> None:
         session = window.controller.session

@@ -66,6 +66,21 @@ Ne pas utiliser `NoButtons` sur les QDoubleSpinBox (valeur invisible avec la feu
   sans Blender). Ne jamais promettre la jouabilité FiveM d'un véhicule modifié.
 - Détails : `docs/VEHICLE_EDITOR.md`.
 
+## Livery Studio (v0.6)
+
+- `livery/` : `model.py` (document versionné, calques, variantes), `surface.py` (UV ↔ 3D, pinceau
+  3D, analyse UV, placement orienté, symétrie 3D), `raster.py`, `blend.py`, `render2d.py` (QtGui),
+  `bands.py`, `compositor.py` (mises à jour partielles), `logos.py`, `templates.py`, `export.py`,
+  `studio.py` (`LiveryStudio`, toutes les opérations via l'historique). Interface : `ui/livery/`.
+- `.lsfc` v6 : `documents["livery"]` + tables `images` / `blobs` ; seuls les éléments cités par un
+  document sont enregistrés. Commandes `SetImage`, `PatchImage`, `AddBlob`.
+- La peinture 3D doit modifier les texels (jamais une superposition écran) ; viewport, canvas et
+  export partagent la même composition (`session.live_textures`).
+- Ne jamais modifier les UV sans confirmation ; ne jamais annoncer un fichier YTD (aucun écrit).
+- `QTreeWidget` / `QListWidget` : vider avec `clear_items` (pas `clear()`) ; textures OpenGL
+  détachées si leur contexte disparaît (`Renderer._abandon_textures`).
+- Détails : `docs/LIVERY_STUDIO.md`.
+
 ## Emergency Studio (v0.5)
 
 - `emergency/` (sans Qt) : `model.py` (services, profils, feux, motifs, sirènes, variantes,

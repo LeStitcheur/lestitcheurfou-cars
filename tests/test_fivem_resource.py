@@ -190,6 +190,8 @@ def test_v2_project_migrates_to_current(projects_dir):
         conn.execute("ALTER TABLE nodes DROP COLUMN extra")
         conn.execute("DROP TABLE meshes")
         conn.execute("DROP TABLE documents")
+        conn.execute("DROP TABLE images")
+        conn.execute("DROP TABLE blobs")
         conn.execute("ALTER TABLE materials DROP COLUMN extra")
         conn.execute("UPDATE meta SET value = '2' WHERE key = 'schema_version'")
         conn.commit()

@@ -46,6 +46,7 @@ class ProjectSession:
         self.missing_assets: dict[str, str] = {}  # asset_id -> raison
         self.stack = UndoStack(project.scene)
         self.selection = Selection()
+        self.live_textures: dict[str, object] = {}  # matériau → texture composée en direct (livrées)
         self._meta_dirty = False
         self.stack.subscribe(lambda _c, _a: self.selection.prune(self.scene))
         self.stack.subscribe(lambda _c, _a: self.prune_geometry())

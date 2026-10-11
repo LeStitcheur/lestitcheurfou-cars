@@ -22,6 +22,7 @@ EXIT_SMOKE_GL_FAILED = 3
 EXIT_SMOKE_FIVEM_FAILED = 4
 EXIT_SMOKE_EDITOR_FAILED = 5
 EXIT_SMOKE_EMERGENCY_FAILED = 6
+EXIT_SMOKE_LIVERY_FAILED = 7
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
@@ -43,6 +44,16 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--version", action="version", version=f"{APP_NAME} {__version__}")
     args, _unknown = parser.parse_known_args(argv)  # ignore les arguments propres à Qt
     return args
+
+
+def release_qt_caches() -> None:
+    """Objets Qt en cache (icônes, polices, logos) libérés avant la destruction de l'application."""
+    from lsfcars.livery import render2d
+    from lsfcars.ui.design import fonts, icons
+
+    icons.clear_caches()
+    fonts.clear_caches()
+    render2d.clear_caches()
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -67,6 +78,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     from PySide6.QtWidgets import QApplication
 
     app = QApplication.instance() or QApplication(sys.argv[:1])
+    app.aboutToQuit.connect(release_qt_caches)
     app.setApplicationName(APP_NAME)
     app.setApplicationVersion(__version__)
     app.setOrganizationName(ORG_NAME)
@@ -96,7 +108,8 @@ def _run_smoke_test(app: QApplication, window: MainWindow, delay_ms: int) -> int
     Code de retour 0 si le rendu OpenGL a fonctionné, ``EXIT_SMOKE_GL_FAILED`` sinon,
     ``EXIT_SMOKE_FIVEM_FAILED`` si l'addon de démonstration n'a pas pu être analysé et décodé,
     ``EXIT_SMOKE_EDITOR_FAILED`` si le Vehicle Editor (édition, bibliothèque, sauvegarde) échoue,
-    ``EXIT_SMOKE_EMERGENCY_FAILED`` si l'Emergency Studio (variante, équipements, motif) échoue.
+    ``EXIT_SMOKE_EMERGENCY_FAILED`` si l'Emergency Studio (variante, équipements, motif) échoue,
+    ``EXIT_SMOKE_LIVERY_FAILED`` si le Livery Studio (peinture 3D, calques, export) échoue.
     Le rendu inclut les superpositions du mode Édition et d'un point d'ancrage.
     """
     import tempfile
@@ -114,6 +127,7 @@ def _run_smoke_test(app: QApplication, window: MainWindow, delay_ms: int) -> int
     result = {"code": EXIT_SMOKE_GL_FAILED}
     editor_ok = _smoke_editor(window, session, log)
     emergency_ok = _smoke_emergency(log)
+    livery_ok = _smoke_livery(log)
 
     def finish() -> None:
         image = viewport.grabFramebuffer()
@@ -133,8 +147,10 @@ def _run_smoke_test(app: QApplication, window: MainWindow, delay_ms: int) -> int
             result["code"] = EXIT_SMOKE_FIVEM_FAILED
         elif not editor_ok:
             result["code"] = EXIT_SMOKE_EDITOR_FAILED
+        elif not emergency_ok:
+            result["code"] = EXIT_SMOKE_EMERGENCY_FAILED
         else:
-            result["code"] = 0 if emergency_ok else EXIT_SMOKE_EMERGENCY_FAILED
+            result["code"] = 0 if livery_ok else EXIT_SMOKE_LIVERY_FAILED
         session.stack.mark_clean()
         window.close()
         app.quit()
@@ -235,6 +251,61 @@ def _smoke_emergency(log) -> bool:  # type: ignore[no-untyped-def]
         return ok
     except Exception:  # noqa: BLE001 (un échec du test doit se traduire par un code de retour)
         log.exception("Test de démarrage : Emergency Studio en échec")
+        return False
+
+
+def _smoke_livery(log) -> bool:  # type: ignore[no-untyped-def]
+    """Livery Studio : document, modèle, peinture 3D, texte, sauvegarde, réouverture, export PNG vérifié."""
+    import tempfile
+
+    import numpy as np
+
+    from lsfcars.livery.export import ExportOptions
+    from lsfcars.livery.logos import LogoLibrary
+    from lsfcars.livery.raster import BrushSettings
+    from lsfcars.livery.studio import LiveryStudio
+    from lsfcars.project.session import ProjectSession
+
+    try:
+        folder = tempfile.mkdtemp(prefix="lsfcars-smoke-livree-")
+        session = ProjectSession.create(folder, "Livrée")
+        session.import_model(samples_dir() / "vehicule_livree.glb")
+        logos = LogoLibrary(f"{folder}/logos")
+        logos.ensure_builtins()
+        studio = LiveryStudio(session, logos)
+        doc = studio.create_document(size=512, template="lspd", unit="27")
+        paint = doc.active_variant.layers[0].id
+        before = studio.composite()
+        studio.begin_stroke(paint, "#38BDF8", BrushSettings(size=24), symmetry=True, mode="3d")
+        hit = studio.stroke_3d([-3.0, 0.6, 0.2], [1.0, 0.0, 0.0])
+        studio.end_stroke()
+        studio.add_text("SMOKE", 256, 470, 40, "#FFFFFF")
+        painted = int((np.abs(studio.composite().astype(int) - before.astype(int)).max(axis=-1) > 4).sum())
+        expected = studio.composite()
+        session.save()
+        reopened = LiveryStudio(ProjectSession.open(session.file_path), logos)
+        report = reopened.export(f"{folder}/export", ExportOptions("png", padding=0))
+        webp = reopened.export(f"{folder}/export", ExportOptions("webp", 256, 256))
+        dds = reopened.export(f"{folder}/export", ExportOptions("dds-dxt5", 256, 256))
+        ok = (
+            hit is not None
+            and painted > 100
+            and np.array_equal(reopened.composite(), expected)
+            and report.verified
+            and webp.verified
+            and dds.verified
+            and dds.mip_levels > 1
+            and sum(1 for _ in reopened.require().active_variant.walk()) >= 10
+        )
+        log.info(
+            "Test de démarrage : Livery Studio %s (%d pixels peints en 3D, export %s)",
+            "OK" if ok else "ÉCHEC",
+            painted,
+            "vérifié" if report.verified else "non vérifié",
+        )
+        return ok
+    except Exception:  # noqa: BLE001 (un échec du test doit se traduire par un code de retour)
+        log.exception("Test de démarrage : Livery Studio en échec")
         return False
 
 

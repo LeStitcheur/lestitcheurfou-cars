@@ -1,4 +1,24 @@
-# Guide utilisateur — LeStitcheurFou Cars 0.5.0
+# Guide utilisateur — LeStitcheurFou Cars 0.6.0
+
+## Nouveautés 0.6 : Livery Studio
+
+Référence complète : [LIVERY_STUDIO.md](LIVERY_STUDIO.md).
+
+1. Importez un véhicule **avec UV** (le fichier d'essai `samples/vehicule_livree.glb` convient).
+   Sans UV, le Livery Studio propose une projection automatique, après confirmation.
+2. Ouvrez **Livery Studio** (barre latérale, section Création) puis **Nouveau document** :
+   matériaux ciblés, résolution, modèle (LSPD, EMS, SAMD…) et numéro d'unité.
+3. **Peindre sur le véhicule** : outil Pinceau (B), clic gauche sur la carrosserie dans la vue 3D
+   (Alt + glisser pour tourner autour). La symétrie gauche / droite se coche dans l'outil.
+4. **Vue UV 2D** : peinture, formes, textes, sélections et guides directement sur la texture.
+   Touches 1 / 2 / 3 : vue 3D, vue UV, vue partagée.
+5. Onglets de gauche : **Formes** (bandes 3D, marquages), **Logos**, **Modèles**.
+6. Onglet **Calques** : ordre (glisser-déposer), groupes, opacité, mode de fusion, masques.
+   **Propriétés** : texte, police, contour, ombre, placement sur une zone, symétrie.
+7. Onglet **Livrées** : seconde variante, comparaison, association à une variante d'urgence.
+8. Onglet **Export** : PNG, TIFF, WEBP ou DDS avec mipmaps ; le fichier est relu et comparé.
+   « Préparer YTD » crée un dossier DDS pour CodeWalker / OpenIV / Sollumz (pas de .ytd).
+9. Enregistrez (Ctrl+S) : calques, textes, logos et variantes restent éditables.
 
 ## Nouveautés 0.5 : Emergency Studio
 

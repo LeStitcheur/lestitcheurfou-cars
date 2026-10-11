@@ -98,6 +98,31 @@ Principe : l'état du studio (variantes, feux, motifs, sirènes, livrée) est un
 groupe par variante. Chaque opération est une `CompositeCommand` (commandes de scène +
 `SetDocument`) : annulation et rétablissement couvrent les deux.
 
+### Ajouts v0.6 (Livery Studio)
+
+```
+src/lsfcars/
+├── scene/images.py     ImageBuffer : calques raster et masques, décodage PNG différé
+├── scene/commands.py   SetImage, PatchImage (régions de pixels), AddBlob (logos, polices)
+├── livery/             logique du Livery Studio (QtGui pour texte et logos, sans Widgets)
+│   ├── model.py        document versionné : calques, groupes, masques, variantes, palettes
+│   ├── surface.py      UV ↔ 3D : lancer de rayon, pinceau 3D, cartes, analyse UV, placement
+│   ├── raster.py       pinceau à masque de trait, remplissage, dégradé, débordement des îlots
+│   ├── blend.py        modes de fusion W3C, sRGB / linéaire
+│   ├── render2d.py     formes, texte (contour, ombre), logos SVG / bitmap
+│   ├── bands.py        bandes 3D et zones de carrosserie
+│   ├── compositor.py   composition avec caches et mises à jour partielles
+│   ├── logos.py        bibliothèque locale de logos (provenance, licence)
+│   ├── templates.py    11 modèles originaux, modèles personnels
+│   ├── export.py       PNG, TIFF, WEBP, DDS + mipmaps, vérification, préparation YTD
+│   └── studio.py       LiveryStudio : opérations, peinture 2D / 3D, variantes, export
+└── ui/livery/          page, canvas 2D, panneau couleur, panneaux
+```
+
+Principe : le document de livrée est un JSON (`documents["livery"]`) ; les pixels sont des
+`ImageBuffer` de `SceneGraph.images`. La composition est publiée dans `session.live_textures`
+et envoyée au GPU par région modifiée : tous les viewports affichent la livrée.
+
 ## Format de projet `.lsfc`
 
 Base SQLite, écrite dans un fichier temporaire puis substituée (`os.replace`) : un plantage
@@ -112,11 +137,13 @@ et ne modifie jamais le fichier.
 | `nodes` | hiérarchie : parent, rang, nom, type, transformation (JSON), visibilité, verrou, asset, maillage, matériau, `extra` (JSON, format 3 : métadonnées d'origine GTA V) |
 | `resources` | format 3 : ressources FiveM importées — nom, source, type de source, statut, date, `manifest` (JSON versionné) |
 | `meshes` | format 4 : géométrie locale (clé, nom, npz compressé : positions, indices, normales, couleurs, UV) |
-| `documents` | format 5 : documents de studio (clé, JSON), ex. `emergency` |
+| `documents` | format 5 : documents de studio (clé, JSON), ex. `emergency`, `livery` |
+| `images` | format 6 : calques raster et masques (clé, largeur, hauteur, canaux, PNG) |
+| `blobs` | format 6 : logos et polices importés (clé = empreinte SHA-256, octets) |
 | `thumbnail` | miniature PNG |
 
 Historique : format 1 (v0.1, table `scene_objects`), format 2 (v0.2), format 3 (v0.3), format 4
-(v0.4 : `meshes`, `materials.extra`, `meta.editor`, nœuds `anchor`), format 5 (v0.5 : `documents`).
+(v0.4 : `meshes`, `materials.extra`, `meta.editor`, nœuds `anchor`), format 5 (v0.5 : `documents`), format 6 (v0.6 : `images`, `blobs`).
 
 Évolution du schéma : incrémenter `SCHEMA_VERSION` et ajouter le script dans `_MIGRATIONS`
 (`store.py`). Un projet plus récent que le logiciel est refusé avec un message explicite.

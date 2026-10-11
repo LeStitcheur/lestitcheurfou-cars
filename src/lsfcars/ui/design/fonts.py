@@ -38,6 +38,10 @@ def brand_family() -> str:
     return load_fonts()["brand"]
 
 
+def clear_caches() -> None:
+    _font.cache_clear()
+
+
 @lru_cache(maxsize=64)
 def _font(family: str, px: int, weight: int, spacing: float, caps: bool) -> QFont:
     font = QFont(family)

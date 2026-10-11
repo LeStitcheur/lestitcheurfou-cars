@@ -101,6 +101,12 @@ class Viewport3D(QOpenGLWidget):
         self.click_handler = None  # fonction (x, y) -> bool (True : clic consommé)
         self.drop_handler = None  # fonction (texte, x, y) -> bool
         self.drop_mime = "application/x-lsf-equipment"
+        # Peinture directe (Livery Studio) : objet avec begin(x, y, pression) -> bool, move(…), end()
+        self.stroke_handler = None
+        self.show_selection = True  # contour de sélection (masqué dans le Livery Studio)
+        self._stroking = False
+        self._tablet_pressure = 1.0
+        self._tablet_active = False
         self._gl_error: str | None = None
         self._press: QPoint | None = None
         self._last = QPoint()
@@ -379,6 +385,8 @@ class Viewport3D(QOpenGLWidget):
 
     # --- Données de la scène ----------------------------------------------------
     def _selected_subtree(self) -> set[str]:
+        if not self.show_selection:
+            return set()
         if self.session is None:
             return set()
         scene = self.session.scene
@@ -417,7 +425,10 @@ class Viewport3D(QOpenGLWidget):
                 item.base_color = material.base_color
                 item.roughness, item.metallic = material.roughness, material.metallic
                 item.opacity = material.opacity
-                if material.texture:
+                live = getattr(session, "live_textures", {}).get(material.id)
+                if live is not None:  # livrée composée en direct (Livery Studio)
+                    item.live_texture = live
+                elif material.texture:
                     path = session.project.project_dir / material.texture
                     item.texture = path if path.is_file() else None
                 if material.normal_texture:
@@ -773,15 +784,39 @@ class Viewport3D(QOpenGLWidget):
         self.transforms_edited.emit(changes, drag.key)
 
     # --- Interaction ----------------------------------------------------------
+    def tabletEvent(self, event) -> None:  # type: ignore[no-untyped-def]  # noqa: N802
+        """Pression des tablettes graphiques ; l'événement souris synthétisé suit."""
+        self._tablet_pressure = max(0.0, min(1.0, float(event.pressure())))
+        self._tablet_active = True
+        event.ignore()
+
+    def _pressure(self, event: QMouseEvent) -> float:
+        return self._tablet_pressure if self._tablet_active else 1.0
+
     def mousePressEvent(self, event: QMouseEvent) -> None:  # noqa: N802
         self.setFocus()
         pos = event.position().toPoint()
+        if (
+            event.button() == Qt.MouseButton.LeftButton
+            and self.stroke_handler is not None
+            and not (event.modifiers() & Qt.KeyboardModifier.AltModifier)
+            and self.stroke_handler.begin(pos.x(), pos.y(), self._pressure(event))
+        ):
+            self._stroking = True
+            self.update()
+            return
         self._press, self._last, self._button, self._moved = pos, pos, event.button(), False
         if event.button() == Qt.MouseButton.LeftButton and self._begin_drag(pos):
             self.update()
 
     def mouseMoveEvent(self, event: QMouseEvent) -> None:  # noqa: N802
         pos = event.position().toPoint()
+        if self._stroking and self.stroke_handler is not None:
+            self.stroke_handler.move(pos.x(), pos.y(), self._pressure(event))
+            self.update()
+            return
+        if self.stroke_handler is not None and hasattr(self.stroke_handler, "hover"):
+            self.stroke_handler.hover(pos.x(), pos.y())
         if self._press is None:  # survol : surbrillance de la poignée
             frame = self._gizmo_frame()
             axis = None
@@ -823,6 +858,15 @@ class Viewport3D(QOpenGLWidget):
         self.update()
 
     def mouseReleaseEvent(self, event: QMouseEvent) -> None:  # noqa: N802
+        if self._stroking:
+            self._stroking = False
+            self._tablet_active = False
+            if self.stroke_handler is not None:
+                self.stroke_handler.end()
+            self._press = None
+            self._button = Qt.MouseButton.NoButton
+            self.update()
+            return
         if self._drag is not None:
             drag, self._drag = self._drag, None
             local = getattr(drag, "local", None)

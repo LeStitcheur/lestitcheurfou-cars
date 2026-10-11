@@ -5,9 +5,11 @@
 
 Atelier Windows de création, d'adaptation et d'export de véhicules **Lore Friendly** pour **GTA V / FiveM**.
 
-> Statut : **v0.5.0 — Emergency Vehicle Studio : variantes de services d'urgence, équipements, éclairages, motifs**.
+> Statut : **v0.6.0 — Livery Studio Pro : livrées 2D / 3D, peinture sur la carrosserie, calques, logos, export**.
 > Voir [CHANGELOG.md](CHANGELOG.md) pour ce qui fonctionne réellement aujourd'hui.
 
+![Livery Studio — livrée LSPD peinte en 3D](docs/screenshots/1920x1080@1_livery_studio.png)
+![Livery Studio — vue UV, calques et propriétés](docs/screenshots/1920x1080@1_livery_uv_calques.png)
 ![Emergency Studio — variante LSPD](docs/screenshots/1920x1080@1_emergency_studio.png)
 ![Emergency Studio — éclairage et timeline](docs/screenshots/1920x1080@1_emergency_eclairage.png)
 ![Vehicle Editor — mode Édition](docs/screenshots/1920x1080@1_mode_edition.png)
@@ -29,10 +31,19 @@ LeStitcheurFou Cars a pour objectif de permettre de :
 
 Tous les types de véhicules sont prévus : voitures, SUV, motos, camions, bateaux, hélicoptères, aéronefs.
 
-## Fonctionnalités de la v0.5.0
+## Fonctionnalités de la v0.6.0
 
 | Fonction | État |
 |---|---|
+| **Livery Studio** : vue 3D, vue UV 2D, vue partagée ; calques raster / vecteur / texte / image / bandes 3D / groupes / masques | ✅ |
+| Peinture 3D réelle sur la carrosserie (texels modifiés, coutures UV, symétrie 3D, pression tablette) | ✅ |
+| Canvas 2D : zoom, règles, guides, UV, sélection, lasso, transformation, copier / coller | ✅ |
+| Texte éditable, logos (10 emblèmes originaux, import PNG / SVG / JPG / WEBP avec licence) | ✅ |
+| Bandes et marquages orientés d'après le dépliage réel ; 11 modèles de livrées | ✅ |
+| Inspecteur UV, projection boîte, dépliage Blender (sur confirmation) | ✅ (dépliage : Blender requis) |
+| Variantes de livrées, association Emergency Studio | ✅ |
+| Export PNG / TIFF / WEBP / DDS + mipmaps, vérification ; préparation YTD | ✅ (aucun .ytd écrit) |
+| `.lsfc` v6 (calques, masques, logos, polices ; migration v1 → v6) | ✅ |
 | **Emergency Studio** : variantes non destructives (LSPD, BCSO, SAHP, EMS, SAMD, LSFD, Rescue, personnalisé) | ✅ |
 | Bibliothèque de 33 équipements originaux (Police, EMS, Fire) et import d'équipements personnels | ✅ |
 | Placement interactif : zones par profil, clic / glisser-déposer sur la carrosserie, magnétisme, symétrie, miroir, collisions approximatives | ✅ |
@@ -41,7 +52,7 @@ Tous les types de véhicules sont prévus : voitures, SUV, motos, camions, batea
 | Export `carcols.meta` (non-ELS), MISS-ELS et JSON intermédiaire ; ELS classique expliqué comme indisponible | ✅ (non garanti en jeu) |
 | Sirènes : modes liés aux motifs, tonalités synthétisées originales, aperçu | ✅ (aperçu Windows) |
 | Intérieurs Police / EMS / Fire, données de livrée, contrôle Lore Friendly | ✅ (livrée : données seules) |
-| `.lsfc` v5 (documents de studio ; migration v1 → v5) | ✅ |
+| Documents de studio Emergency (`.lsfc` depuis v5) | ✅ |
 | **Vehicle Editor** : modes Objet, Édition (sommets / arêtes / faces), Composant | ✅ |
 | Édition réelle du maillage : déplacer, pivoter, échelle, extrusion, inset, fusion, suppression, normales, symétrie, séparation, projection UV | ✅ |
 | Biseau d'arêtes (Blender en processus auxiliaire) | ✅ si Blender est installé |
@@ -65,8 +76,9 @@ Tous les types de véhicules sont prévus : voitures, SUV, motos, camions, batea
 | Blender / Sollumz : détection et sondage réels, tâches annulables | ✅ (Sollumz non testé : non installé) |
 | Collisions `.ybn` (géométrie), export FiveM, écriture des formats GTA V | 🕓 non implémentés |
 | Matériaux, projets, sauvegarde auto (v0.2) | ✅ |
-| Livery Studio (éditeur), IA, Optimisation, Export FiveM complet (YFT) | 🕓 « Bientôt », non fonctionnels |
+| IA, Optimisation, Export FiveM complet (YFT, YTD) | 🕓 « Bientôt », non fonctionnels |
 
+Livery Studio, peinture 3D et export : [docs/LIVERY_STUDIO.md](docs/LIVERY_STUDIO.md).
 Emergency Studio, adaptateurs et limites : [docs/EMERGENCY_STUDIO.md](docs/EMERGENCY_STUDIO.md).
 Vehicle Editor, outils et limites : [docs/VEHICLE_EDITOR.md](docs/VEHICLE_EDITOR.md).
 Compatibilité détaillée des formats et limites : [docs/FIVEM_IMPORT.md](docs/FIVEM_IMPORT.md).
@@ -94,6 +106,7 @@ addon de démonstration (synthétique) : `python scripts\generate_demo_addon.py`
 ## Documentation
 
 - [Guide utilisateur](docs/GUIDE_UTILISATEUR.md)
+- [Livery Studio](docs/LIVERY_STUDIO.md)
 - [Emergency Studio](docs/EMERGENCY_STUDIO.md)
 - [Vehicle Editor](docs/VEHICLE_EDITOR.md)
 - [Vehicle Import Studio et formats GTA V / FiveM](docs/FIVEM_IMPORT.md)

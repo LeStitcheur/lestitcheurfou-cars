@@ -35,6 +35,7 @@ from lsfcars.ui.design.topbar import LSTopbar
 from lsfcars.ui.dialogs.new_project import NewProjectDialog, NewProjectRequest
 from lsfcars.ui.emergency.page import EmergencyPage
 from lsfcars.ui.import_studio.page import VehicleImportStudio
+from lsfcars.ui.livery.page import LiveryPage
 from lsfcars.ui.pages.dashboard import DashboardPage
 from lsfcars.ui.pages.pages import (
     UPCOMING,
@@ -55,7 +56,6 @@ SAMPLE_PROJECT_NAME = "Démo - Véhicule de test"
 PROJECT_FILTER = f"Projets {APP_NAME} (*{PROJECT_EXTENSION})"
 RESIZE_MARGIN = 6
 UPCOMING_ICONS = {
-    "liveries": "paint-bucket",
     "configs": "sliders-horizontal",
     "ai": "sparkles",
     "lore": "scroll-text",
@@ -97,7 +97,13 @@ def nav_entries() -> list[NavEntry]:
             tooltip="Composants 3D réutilisables (dans le Vehicle Editor)",
         ),
         NavEntry("materials", "Matériaux", "palette", "Création"),
-        soon("liveries"),
+        NavEntry(
+            "liveries",
+            "Livery Studio",
+            "paint-bucket",
+            "Création",
+            tooltip="Livrées 2D / 3D : calques, peinture sur la carrosserie, logos, textes, bandes, export",
+        ),
         NavEntry(
             "emergency",
             "Emergency Studio",
@@ -149,6 +155,8 @@ class MainWindow(QMainWindow):
         self.studio = StudioPage(self.controller, self.settings)
         self.import_page = VehicleImportStudio(self.controller, self.ensure_project)
         self.emergency = EmergencyPage(self.controller, self.settings)
+        self.livery = LiveryPage(self.controller, self.settings)
+        self.livery.emergency_page = self.emergency
         self.materials_page = MaterialsPage(self.controller)
         self.settings_page = SettingsPage(self.settings)
         self.diagnostics_page = DiagnosticsPage()
@@ -159,6 +167,7 @@ class MainWindow(QMainWindow):
             "studio": self.studio,
             "import": self.import_page,
             "emergency": self.emergency,
+            "liveries": self.livery,
             "materials": self.materials_page,
             "settings": self.settings_page,
             "diagnostics": self.diagnostics_page,
@@ -277,6 +286,7 @@ class MainWindow(QMainWindow):
         self.import_page.error.connect(self.error)
         self.import_page.imported.connect(self._on_resource_imported)
         self.emergency.editor_requested.connect(lambda: self.navigate("studio"))
+        self.livery.editor_requested.connect(lambda: self.navigate("studio"))
         self.settings_page.settings_changed.connect(self._on_setting)
 
     # --- Navigation ---------------------------------------------------------
@@ -703,6 +713,7 @@ class MainWindow(QMainWindow):
         self.settings.set_value("window/geometry", self.saveGeometry())
         self.studio.save_layout()
         self.emergency.save_layout()
+        self.livery.save_layout()
         self.studio.bottom.log_panel.detach()
         self.import_page.shutdown()
         QApplication.instance().removeEventFilter(self)

@@ -20,6 +20,10 @@ d'ancrage sont des nœuds de type ``anchor`` ; variantes et rôles de composants
 Format 5 (v0.5) : table ``documents`` (documents d'extension JSON). Le document ``emergency``
 contient les variantes d'urgence, sources lumineuses, groupes, motifs, profils de sirènes,
 configurations intérieures, données de livrée et profils de véhicules personnalisés.
+
+Format 6 (v0.6) : tables ``images`` (calques raster et masques de livrée, PNG) et ``blobs``
+(logos et polices importés). Seuls les éléments cités par un document sont enregistrés. Le
+document ``livery`` contient les documents de livrée éditables (calques, variantes, presets).
 """
 
 from __future__ import annotations
@@ -49,6 +53,7 @@ from lsfcars.project.model import (
     utc_now_iso,
 )
 from lsfcars.scene.graph import NodeKind, SceneGraph, SceneNode
+from lsfcars.scene.images import ImageBuffer
 from lsfcars.scene.materials import EXTRA_FIELDS, Material
 from lsfcars.scene.mesh import MeshData
 from lsfcars.scene.transform import Transform
@@ -57,7 +62,7 @@ log = get_logger(__name__)
 
 PROJECT_EXTENSION = ".lsfc"
 FORMAT_ID = APP_ID
-SCHEMA_VERSION = 5
+SCHEMA_VERSION = 6
 
 _SCHEMA = """
 CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
@@ -83,6 +88,9 @@ CREATE TABLE resources (
 );
 CREATE TABLE meshes (key TEXT PRIMARY KEY, name TEXT NOT NULL, data BLOB NOT NULL);
 CREATE TABLE documents (key TEXT PRIMARY KEY, data TEXT NOT NULL);
+CREATE TABLE images (key TEXT PRIMARY KEY, width INTEGER NOT NULL, height INTEGER NOT NULL,
+    channels INTEGER NOT NULL, data BLOB NOT NULL);
+CREATE TABLE blobs (key TEXT PRIMARY KEY, data BLOB NOT NULL);
 """
 
 _V2_TABLES = ("assets", "materials", "nodes", "thumbnail")
@@ -254,6 +262,11 @@ def save_project(project: Project, path: str | Path | None = None) -> Path:
     used = scene.used_mesh_keys()
     mesh_rows = [(k, m.name, mesh_to_bytes(m)) for k, m in scene.meshes.items() if k in used]
     document_rows = [(k, json.dumps(v, ensure_ascii=False)) for k, v in scene.documents.items()]
+    cited = "".join(row[1] for row in document_rows)  # images et fichiers cités par un document
+    image_rows = [
+        (k, img.width, img.height, img.channels, img.png()) for k, img in scene.images.items() if k in cited
+    ]
+    blob_rows = [(k, data) for k, data in scene.blobs.items() if k in cited]
     try:
         with closing(sqlite3.connect(tmp)) as conn:
             conn.executescript(_SCHEMA)
@@ -266,6 +279,8 @@ def save_project(project: Project, path: str | Path | None = None) -> Path:
             conn.executemany("INSERT INTO materials VALUES (?,?,?,?,?,?,?,?,?)", material_rows)
             conn.executemany("INSERT INTO meshes VALUES (?,?,?)", mesh_rows)
             conn.executemany("INSERT INTO documents VALUES (?,?)", document_rows)
+            conn.executemany("INSERT INTO images VALUES (?,?,?,?,?)", image_rows)
+            conn.executemany("INSERT INTO blobs VALUES (?,?)", blob_rows)
             conn.executemany("INSERT INTO nodes VALUES (?,?,?,?,?,?,?,?,?,?,?,?)", node_rows)
             conn.executemany("INSERT INTO resources VALUES (?,?,?,?,?,?,?)", resource_rows)
             if project.thumbnail:
@@ -355,7 +370,17 @@ def _migrate_v4(conn: sqlite3.Connection) -> None:
     conn.execute("UPDATE meta SET value = '5' WHERE key = 'schema_version'")
 
 
-_MIGRATIONS = {1: _migrate_v1, 2: _migrate_v2, 3: _migrate_v3, 4: _migrate_v4}
+def _migrate_v5(conn: sqlite3.Connection) -> None:
+    """v5 → v6 : images (calques de livrée) et fichiers binaires (logos, polices)."""
+    tables = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+    for name in ("images", "blobs"):
+        if name not in tables:
+            statement = next(s for s in _SCHEMA.split(";") if s.strip().startswith(f"CREATE TABLE {name} "))
+            conn.execute(statement)
+    conn.execute("UPDATE meta SET value = '6' WHERE key = 'schema_version'")
+
+
+_MIGRATIONS = {1: _migrate_v1, 2: _migrate_v2, 3: _migrate_v3, 4: _migrate_v4, 5: _migrate_v5}
 
 
 def load_project(path: str | Path) -> Project:
@@ -390,6 +415,8 @@ def load_project(path: str | Path) -> Project:
             resource_rows = conn.execute("SELECT * FROM resources").fetchall()
             mesh_rows = conn.execute("SELECT key, name, data FROM meshes").fetchall()
             document_rows = conn.execute("SELECT key, data FROM documents").fetchall()
+            image_rows = conn.execute("SELECT key, channels, data FROM images").fetchall()
+            blob_rows = conn.execute("SELECT key, data FROM blobs").fetchall()
     except (sqlite3.DatabaseError, ValueError) as exc:
         raise ProjectError(f"« {path.name} » est illisible ou corrompu : {exc}") from exc
     project = _build_project(path, meta, assets, materials, nodes, thumb[0] if thumb else None)
@@ -401,6 +428,13 @@ def load_project(path: str | Path) -> Project:
             continue
         if isinstance(value, dict):
             project.scene.documents[key] = value
+    for key, channels, data in image_rows:
+        try:  # décodage différé : seul l'en-tête est lu ici
+            project.scene.images[key] = ImageBuffer(png=bytes(data), channels=int(channels))
+        except (OSError, ValueError) as exc:
+            log.warning("Image « %s » illisible : %s", key, exc)
+    for key, data in blob_rows:
+        project.scene.blobs[key] = bytes(data)
     for key, name, data in mesh_rows:
         try:
             project.scene.meshes[key] = mesh_from_bytes(name, data)

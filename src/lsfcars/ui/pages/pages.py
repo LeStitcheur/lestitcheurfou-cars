@@ -142,17 +142,6 @@ class Upcoming:
 
 UPCOMING: tuple[Upcoming, ...] = (
     Upcoming(
-        "liveries",
-        "Création",
-        "Livrées",
-        "Création et personnalisation des livrées appliquées sur la carrosserie.",
-        (
-            "Calques de couleurs, logos, textes et motifs",
-            "Gabarits UV par véhicule",
-            "Aperçu en direct et export des textures FiveM",
-        ),
-    ),
-    Upcoming(
         "configs",
         "Personnalisation",
         "Configurations",

@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 import numpy as np
 
 from lsfcars.scene.graph import SceneGraph, SceneNode
+from lsfcars.scene.images import ImageBuffer
 from lsfcars.scene.materials import Material
 from lsfcars.scene.mesh import MeshData
 from lsfcars.scene.transform import Transform, decompose
@@ -19,6 +20,7 @@ TRANSFORM = "transform"
 PROPERTY = "property"
 MATERIAL = "material"
 GEOMETRY = "geometry"
+IMAGE = "image"
 
 DEFAULT_MEMORY_BUDGET = 768 * 1024 * 1024  # octets de géométrie conservés par l'historique
 
@@ -343,6 +345,84 @@ class SetDocument(Command):
 
     def undo(self, scene: SceneGraph) -> None:
         self._apply(scene, self.before)
+
+
+@dataclass
+class SetImage(Command):
+    """Ajoute, remplace ou retire une image de projet (calque raster, masque) ; ``None`` = absente."""
+
+    key: str
+    before: ImageBuffer | None
+    after: ImageBuffer | None
+    label: str = "Image"
+    kind: str = IMAGE
+
+    def _apply(self, scene: SceneGraph, value: ImageBuffer | None) -> None:
+        if value is None:
+            scene.images.pop(self.key, None)
+        else:
+            scene.images[self.key] = value
+            value.touch()
+
+    def redo(self, scene: SceneGraph) -> None:
+        self._apply(scene, self.after)
+
+    def undo(self, scene: SceneGraph) -> None:
+        self._apply(scene, self.before)
+
+    def cost(self) -> int:
+        return self.after.nbytes() if self.after is not None else 0
+
+
+@dataclass
+class PatchImage(Command):
+    """Remplace une région rectangulaire d'une image (coup de pinceau, remplissage…).
+
+    Seules les régions touchées sont conservées dans l'historique (avant / après).
+    """
+
+    key: str
+    x: int
+    y: int
+    before: np.ndarray
+    after: np.ndarray
+    label: str = "Peinture"
+    kind: str = IMAGE
+
+    def _apply(self, scene: SceneGraph, data: np.ndarray) -> None:
+        image = scene.images[self.key]
+        h, w = data.shape[:2]
+        image.array[self.y : self.y + h, self.x : self.x + w] = data
+        image.touch()
+
+    def redo(self, scene: SceneGraph) -> None:
+        self._apply(scene, self.after)
+
+    def undo(self, scene: SceneGraph) -> None:
+        self._apply(scene, self.before)
+
+    def rect(self) -> tuple[int, int, int, int]:
+        h, w = self.after.shape[:2]
+        return (self.x, self.y, self.x + w, self.y + h)
+
+    def cost(self) -> int:
+        return int(self.before.nbytes + self.after.nbytes)
+
+
+@dataclass
+class AddBlob(Command):
+    """Fichier binaire du projet (logo, police) : contenu immuable adressé par son empreinte."""
+
+    key: str
+    data: bytes
+    label: str = "Fichier"
+    kind: str = PROPERTY
+
+    def redo(self, scene: SceneGraph) -> None:
+        scene.blobs.setdefault(self.key, self.data)
+
+    def undo(self, scene: SceneGraph) -> None:
+        pass  # conservé : d'autres éléments peuvent citer le même contenu
 
 
 @dataclass

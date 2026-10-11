@@ -66,6 +66,12 @@ def icon(
     return result
 
 
+def clear_caches() -> None:
+    """Libère les QPixmap / QIcon en cache avant l'arrêt de l'application (ordre de destruction Qt)."""
+    for cached in (pixmap, icon, logo):
+        cached.cache_clear()
+
+
 @lru_cache(maxsize=16)
 def logo(size: int) -> QPixmap:
     """Logo de l'application (icône LeStitcheurFou Cars)."""

@@ -9,6 +9,7 @@ from enum import StrEnum
 
 import numpy as np
 
+from lsfcars.scene.images import ImageBuffer
 from lsfcars.scene.materials import Material
 from lsfcars.scene.mesh import MeshData
 from lsfcars.scene.transform import Transform
@@ -101,6 +102,10 @@ class SceneGraph:
         # Documents d'extension sérialisables en JSON (ex. « emergency » : variantes, feux, motifs),
         # modifiés uniquement par la commande ``SetDocument`` pour rester annulables.
         self.documents: dict[str, dict] = {}
+        # Images (calques raster, masques) et fichiers binaires (logos, polices) des documents ;
+        # seuls ceux cités par un document sont enregistrés.
+        self.images: dict[str, ImageBuffer] = {}
+        self.blobs: dict[str, bytes] = {}
 
     # --- Lecture ------------------------------------------------------------
     def __contains__(self, node_id: object) -> bool:
@@ -221,6 +226,8 @@ class SceneGraph:
         self.materials.clear()
         self.meshes.clear()
         self.documents.clear()
+        self.images.clear()
+        self.blobs.clear()
 
     def anchor_nodes(self) -> Iterator[SceneNode]:
         return (n for n in self.walk() if n.kind is NodeKind.ANCHOR)

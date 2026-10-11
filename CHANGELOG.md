@@ -5,6 +5,72 @@ versionnement [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+## [0.6.0] - 2026-10-12
+
+Livery Studio Pro : éditeur de livrées 2D / 3D intégré, dans le design Dark Premium.
+
+### Modifié
+
+- L'atelier « Livrées » marqué « Bientôt » devient le **Livery Studio** (fonctionnel).
+- Format de projet `.lsfc` **v6** : tables `images` (calques raster et masques, PNG, décodage
+  différé) et `blobs` (logos et polices importés) ; migration automatique v1…v5 → v6.
+- Rendu 3D : textures composées en direct (envoi de la seule région modifiée) et mode « livrée
+  transparente » posée sur la couleur de peinture du matériau.
+- Viewport : gestionnaire de peinture directe et pression des tablettes graphiques.
+- Stabilité : les textures OpenGL orphelines (fenêtre détruite) ne provoquent plus de plantage à
+  la libération ; caches Qt libérés avant l'arrêt de l'application.
+
+### Ajouté (fonctionnel, testé)
+
+- Page **Livery Studio** : outils, formes, logos, modèles à gauche ; vue 3D, vue UV 2D ou vue
+  partagée au centre ; calques, propriétés, couleurs, matériaux, livrées, export à droite ;
+  historique, progression, diagnostics, UV en bas ; panneaux redimensionnables et mémorisés.
+- **Peinture 3D réelle** : le pinceau est projeté sur le maillage ; les texels dont la position
+  3D est dans la sphère du pinceau sont peints, de part et d'autre des coutures UV ; symétrie par
+  le plan du véhicule ; pression, taille, opacité, dureté, espacement, gomme.
+- **Canvas 2D** : zoom, panoramique, grille, règles, guides magnétiques, UV et coutures,
+  sélection rectangulaire, lasso, sélection d'îlot, transformation (déplacement, rotation,
+  échelle), alignement, duplication, copier / couper / coller, aperçu réduit pour les 4K.
+- **Calques** raster, vectoriels, texte, image, bandes 3D, groupes et masques ; visibilité,
+  verrou, opacité, modes Normal / Multiply / Screen / Overlay / Add (+ Obscurcir, Éclaircir),
+  fusion vers le bas, pixellisation explicite, éléments communs aux livrées. Rien n'est fusionné à
+  l'enregistrement.
+- **Outils** : pinceau, gomme, remplissage (couleur, îlot UV, sélection), ligne, rectangle,
+  rectangle arrondi, cercle, ellipse, polygone, courbe, dégradé, pipette (2D et 3D), sélection,
+  transformation ; raccourcis clavier.
+- **Texte** éditable : police, taille, couleur, rotation, alignement, espacement, interligne,
+  contour, ombre, opacité ; polices personnelles TTF / OTF intégrées au projet avec leur licence.
+- **Logos** : bibliothèque locale (10 emblèmes originaux générés), import PNG / SVG / JPG / WEBP
+  avec auteur, source, licence et catégorie ; recoloration, symétrie, proportions ; registre de
+  provenance du document.
+- **Outils de livrée** : bandes 3D longitudinales, verticales et diagonales, motifs (rayures,
+  damier, chevrons, tirets, réfléchissant simulé), zones (flancs, capot, toit, coffre, avant,
+  arrière), marquages placés d'après l'orientation réelle du dépliage, symétrie gauche / droite
+  calculée en 3D (îlot tourné ou retourné reconnu), textes ajustés à leur îlot.
+- **11 modèles** originaux (LSPD, Sheriff, State Police, Highway Patrol, EMS, SAMD, Fire,
+  Rescue, Civil, Racing, Custom) et modèles personnels portables ; hauteurs relatives à la
+  carrosserie.
+- **Couleurs** : carré TSV, RGB, HSV, HEX, opacité, historique, palettes, valeur linéaire ;
+  couleur de peinture du matériau distincte de la texture ; fusion sRGB ou linéaire.
+- **Inspecteur UV** : îlots, UV absentes, hors limites, triangles dégénérés, chevauchements,
+  coutures, densité de texels ; projection boîte et dépliage Blender (Smart UV Project), sur
+  confirmation, annulables.
+- **Variantes de livrées** : créer, dupliquer, renommer, supprimer, comparer, exporter ;
+  association aux variantes d'Emergency Studio (équipements préservés, aperçu des feux).
+- **Export** PNG, TIFF, WEBP sans perte, DDS DXT1 / DXT5 / non compressé avec mipmaps,
+  1024 / 2048 / 4096 / personnalisé, débordement des îlots, relecture et rapport ; dossier de
+  préparation YTD (DDS + manifeste) — aucun fichier .ytd n'est écrit.
+- Véhicule d'essai original avec dépliage UV (`samples/vehicule_livree.glb`).
+- Test de démarrage étendu au Livery Studio (code de sortie 7).
+- Tests : 21 nouveaux tests (20 scénarios obligatoires, cas difficiles, parcours d'acceptation).
+
+### Limites connues
+
+- Aucun fichier YTD produit (pas de convertisseur vérifié) ; compatibilité en jeu non garantie.
+- Composition 8 bits sRGB ; la symétrie d'un calque raster existant se fait pendant la peinture.
+- Bandes 3D calculées à 2048 px au plus puis mises à l'échelle pour les textures 4K.
+- Marquages « réfléchissants » : rendu visuel uniquement.
+
 ## [0.5.0] - 2026-10-11
 
 Emergency Vehicle Studio : transformation d'un véhicule civil en variantes de services d'urgence

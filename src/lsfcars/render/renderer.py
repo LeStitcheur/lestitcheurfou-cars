@@ -64,6 +64,7 @@ MESH_FS = """
 in vec3 vNormal; in vec3 vViewPos; in vec4 vColor; in vec2 vUV; in vec3 vWorldNormal;
 uniform vec4 uBaseColor; uniform float uRough; uniform float uMetal; uniform float uAlpha;
 uniform float uUseTexture; uniform sampler2D uTex; uniform float uMode; uniform float uHighlight;
+uniform float uTexMode;
 uniform float uUseNormal; uniform sampler2D uNormalTex; uniform float uNormalStrength; uniform vec3 uAccent;
 out vec4 fragColor;
 vec3 perturb(vec3 n, vec3 p, vec2 uv) {  // repère tangent par dérivées écran (sans tangentes stockées)
@@ -91,7 +92,8 @@ void main() {
         albedo = uBaseColor.rgb * vColor.rgb;
         if (uUseTexture > 0.5) {
             vec4 tex = texture(uTex, vUV);
-            albedo *= tex.rgb; alpha = tex.a;
+            if (uTexMode > 0.5) albedo = mix(albedo, tex.rgb, tex.a);  // livrée posée sur la peinture
+            else { albedo *= tex.rgb; alpha = tex.a; }
         }
         alpha *= uBaseColor.a * uAlpha;
         rough = clamp(uRough, 0.04, 1.0); metal = clamp(uMetal, 0.0, 1.0);
@@ -195,6 +197,7 @@ class DrawItem:
     normal_strength: float = 1.0
     uv_scale: tuple[float, float] = (1.0, 1.0)
     uv_offset: tuple[float, float] = (0.0, 0.0)
+    live_texture: object | None = None  # texture composée en direct (Livery Studio)
 
 
 @dataclass
@@ -295,6 +298,7 @@ class Renderer:
         self._bg_prog: QOpenGLShaderProgram | None = None
         self._meshes: dict[int, tuple[MeshData, _Gpu]] = {}
         self._textures: dict[Path, QOpenGLTexture | None] = {}
+        self._live: dict[int, list] = {}  # id(LiveTexture) → [texture, version, taille, objet]
         self._grid: _Gpu | None = None
         self._bg: _Gpu | None = None
         self._axes: _Gpu | None = None
@@ -455,10 +459,65 @@ class Renderer:
                 self._textures[path] = texture
         return self._textures[path]
 
+    def _live_texture(self, live) -> QOpenGLTexture | None:  # type: ignore[no-untyped-def]
+        """Texture composée en direct : seule la région modifiée depuis le dernier envoi est transférée."""
+        array = live.array
+        h, w = array.shape[:2]
+        entry = self._live.get(id(live))
+        if entry is None or entry[2] != (w, h) or entry[3] is not live:
+            if entry is not None:
+                entry[0].destroy()
+            image = QImage(array.data, w, h, w * 4, QImage.Format.Format_RGBA8888).copy()
+            vertical = Qt.Orientation.Vertical
+            flipped = image.flipped(vertical) if hasattr(image, "flipped") else image.mirrored()
+            texture = QOpenGLTexture(flipped)
+            texture.setMinificationFilter(QOpenGLTexture.Filter.LinearMipMapLinear)
+            texture.setMagnificationFilter(QOpenGLTexture.Filter.Linear)
+            texture.setWrapMode(QOpenGLTexture.WrapMode.Repeat)
+            self._live[id(live)] = [texture, live.version, (w, h), live]
+            return texture
+        texture, version = entry[0], entry[1]
+        change = live.changes_since(version)
+        if change is not False:
+            x0, y0, x1, y1 = (0, 0, w, h) if change is True else change
+            region = np.ascontiguousarray(array[y0:y1, x0:x1][::-1])
+            texture.bind()
+            texture.setData(
+                x0,
+                h - y1,
+                0,
+                x1 - x0,
+                y1 - y0,
+                1,
+                QOpenGLTexture.PixelFormat.RGBA,
+                QOpenGLTexture.PixelType.UInt8,
+                region.tobytes(),
+            )
+            texture.generateMipMaps()
+            texture.release()
+            entry[1] = live.version
+        return texture
+
     def collect_garbage(self, live: set[int]) -> None:
         """Libère les maillages qui ne sont plus affichés (contexte courant requis)."""
         for key in [k for k in self._meshes if k not in live]:
             self._meshes.pop(key)[1].destroy()
+
+    def __del__(self) -> None:
+        self._abandon_textures()
+
+    def _abandon_textures(self) -> None:
+        """Textures non libérées dans leur contexte (fenêtre détruite) : enveloppes détachées.
+
+        Le destructeur C++ de ``QOpenGLTexture`` déréférencerait un contexte déjà détruit ; la
+        mémoire vidéo est rendue avec le contexte lui-même.
+        """
+        textures = [t for t in self._textures.values() if t is not None] + [e[0] for e in self._live.values()]
+        self._textures.clear()
+        self._live.clear()
+        for texture in textures:
+            if shiboken6.isValid(texture):
+                shiboken6.invalidate(texture)
 
     def release(self) -> None:
         for _mesh, gpu in self._meshes.values():
@@ -468,6 +527,9 @@ class Renderer:
             if texture is not None:
                 texture.destroy()
         self._textures.clear()
+        for entry in self._live.values():
+            entry[0].destroy()
+        self._live.clear()
         for gpu in (self._grid, self._bg, self._axes):
             if gpu is not None:
                 gpu.destroy()
@@ -480,6 +542,9 @@ class Renderer:
         start = time.perf_counter()
         fn = self._fn
         assert fn is not None and self._mesh_prog and self._line_prog and self._bg_prog
+        shown = {id(i.live_texture) for i in frame.items if i.live_texture is not None}
+        for key in [k for k in self._live if k not in shown]:  # textures en direct plus affichées
+            self._live.pop(key)[0].destroy()
         full = (0, 0, int(frame.width * frame.ratio), int(frame.height * frame.ratio))
         fn.glViewport(*full)
         fn.glClearColor(*BACKGROUND_BOTTOM, 1.0)
@@ -615,8 +680,11 @@ class Renderer:
         prog.setUniformValue("uAccent", *ACCENT_COLOR)
         prog.setUniformValue("uUVScale", float(item.uv_scale[0]), float(item.uv_scale[1]))
         prog.setUniformValue("uUVOffset", float(item.uv_offset[0]), float(item.uv_offset[1]))
-        texture = self._texture(item.texture)
+        live = item.live_texture
+        texture = self._live_texture(live) if live is not None else self._texture(item.texture)
         prog.setUniformValue1f("uUseTexture", 1.0 if texture is not None else 0.0)
+        decal = live is not None and getattr(live, "mode", "texture") == "decal"
+        prog.setUniformValue1f("uTexMode", 1.0 if decal else 0.0)
         if texture is not None:
             texture.bind(0)
         normal = self._texture(item.normal_texture)

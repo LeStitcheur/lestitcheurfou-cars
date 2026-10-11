@@ -29,6 +29,15 @@ def demo_addon_sample() -> Path:
     return folder
 
 
+@pytest.fixture(scope="session", autouse=True)
+def release_qt_caches_at_exit():
+    """Les objets Qt en cache sont libérés avant la destruction de la QApplication (arrêt propre)."""
+    yield
+    from lsfcars.app import release_qt_caches
+
+    release_qt_caches()
+
+
 @pytest.fixture(autouse=True)
 def isolated_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     home = tmp_path / "lsfcars-home"
@@ -39,6 +48,20 @@ def isolated_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 @pytest.fixture
 def sample_glb() -> Path:
     return SAMPLES / "vehicule_test.glb"
+
+
+@pytest.fixture
+def livery_glb() -> Path:
+    """Véhicule d'essai original avec dépliage UV (îlot droit tourné, rétroviseurs superposés)."""
+    path = SAMPLES / "vehicule_livree.glb"
+    if not path.is_file():
+        import runpy
+
+        runpy.run_path(
+            str(Path(__file__).resolve().parents[1] / "scripts" / "generate_livery_sample.py"),
+            run_name="__main__",
+        )
+    return path
 
 
 @pytest.fixture
