@@ -1,0 +1,10 @@
+# Fins de ligne normalisées dans le dépôt
+* text=auto eol=lf
+*.ps1 text eol=crlf
+*.bat text eol=crlf
+
+# Binaires
+*.glb binary
+*.png binary
+*.ico binary
+*.lsfc binary
