@@ -1,4 +1,31 @@
-# Guide utilisateur — LeStitcheurFou Cars 0.6.0
+# Guide utilisateur — LeStitcheurFou Cars 0.7.0
+
+## Nouveautés 0.7 : AI Vehicle Creator
+
+Référence complète : [AI_VEHICLE_CREATOR.md](AI_VEHICLE_CREATOR.md).
+
+1. Créez ou ouvrez un projet, puis **AI Vehicle Creator** (barre latérale, section Outils).
+   Les moteurs et le matériel sont détectés automatiquement (onglet du bas « Matériel et
+   moteurs »).
+2. Onglet **Références** → **Importer…** : plusieurs images (avant, arrière, profils, trois
+   quarts, dessus…). Vérifiez la vue de chacune, recadrez, annotez les logos réels (ils seront
+   masqués) et renseignez la provenance. Essai rapide : `samples/references/demo_*.png`.
+3. Onglet **Analyse** → **Analyser** : type proposé, proportions, roues, couleurs, incohérences.
+   Corrigez une mesure par double-clic ; saisissez une longueur connue pour des cotes réalistes.
+4. Onglet **Génération** (à droite) : mode Automatique / Local / Cloud, moteur (le routage
+   explique son choix), profil, puis **Générer**. La progression s'affiche ; l'interface reste
+   utilisable ; « Annuler » interrompt la tâche. Un envoi cloud ou une opération payante demande
+   toujours votre confirmation.
+5. Le modèle apparaît dans la vue 3D. **Maillage** : analyser, corriger (annulable), retourner
+   de 180° si l'avant est inversé, recaler sur les proportions mesurées.
+6. **Textures** : projection des références, application au modèle, ouverture dans Livery
+   Studio. **Lore Friendly** (à gauche) : propositions, noms fictifs, ajustements, provenance.
+7. **Historique** : réouvrir, dupliquer, comparer, réutiliser les paramètres. Enregistrez
+   (Ctrl+S) puis **Vehicle Editor** pour poursuivre le travail à la main.
+
+Moteur neuronal local facultatif : **Moteurs → TripoSR → Installer…** (environ 5 à 6 Go,
+liste des téléchargements affichée avant confirmation). Un maillage généré n'est jamais un
+véhicule FiveM prêt à l'emploi.
 
 ## Nouveautés 0.6 : Livery Studio
 

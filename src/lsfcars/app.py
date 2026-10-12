@@ -23,6 +23,7 @@ EXIT_SMOKE_FIVEM_FAILED = 4
 EXIT_SMOKE_EDITOR_FAILED = 5
 EXIT_SMOKE_EMERGENCY_FAILED = 6
 EXIT_SMOKE_LIVERY_FAILED = 7
+EXIT_SMOKE_AI_FAILED = 8
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
@@ -109,7 +110,8 @@ def _run_smoke_test(app: QApplication, window: MainWindow, delay_ms: int) -> int
     ``EXIT_SMOKE_FIVEM_FAILED`` si l'addon de démonstration n'a pas pu être analysé et décodé,
     ``EXIT_SMOKE_EDITOR_FAILED`` si le Vehicle Editor (édition, bibliothèque, sauvegarde) échoue,
     ``EXIT_SMOKE_EMERGENCY_FAILED`` si l'Emergency Studio (variante, équipements, motif) échoue,
-    ``EXIT_SMOKE_LIVERY_FAILED`` si le Livery Studio (peinture 3D, calques, export) échoue.
+    ``EXIT_SMOKE_LIVERY_FAILED`` si le Livery Studio (peinture 3D, calques, export) échoue,
+    ``EXIT_SMOKE_AI_FAILED`` si AI Vehicle Creator (analyse, génération locale, textures) échoue.
     Le rendu inclut les superpositions du mode Édition et d'un point d'ancrage.
     """
     import tempfile
@@ -128,6 +130,7 @@ def _run_smoke_test(app: QApplication, window: MainWindow, delay_ms: int) -> int
     editor_ok = _smoke_editor(window, session, log)
     emergency_ok = _smoke_emergency(log)
     livery_ok = _smoke_livery(log)
+    ai_ok = _smoke_ai(log)
 
     def finish() -> None:
         image = viewport.grabFramebuffer()
@@ -149,8 +152,10 @@ def _run_smoke_test(app: QApplication, window: MainWindow, delay_ms: int) -> int
             result["code"] = EXIT_SMOKE_EDITOR_FAILED
         elif not emergency_ok:
             result["code"] = EXIT_SMOKE_EMERGENCY_FAILED
+        elif not livery_ok:
+            result["code"] = EXIT_SMOKE_LIVERY_FAILED
         else:
-            result["code"] = 0 if livery_ok else EXIT_SMOKE_LIVERY_FAILED
+            result["code"] = 0 if ai_ok else EXIT_SMOKE_AI_FAILED
         session.stack.mark_clean()
         window.close()
         app.quit()
@@ -306,6 +311,56 @@ def _smoke_livery(log) -> bool:  # type: ignore[no-untyped-def]
         return ok
     except Exception:  # noqa: BLE001 (un échec du test doit se traduire par un code de retour)
         log.exception("Test de démarrage : Livery Studio en échec")
+        return False
+
+
+def _smoke_ai(log) -> bool:  # type: ignore[no-untyped-def]
+    """AI Vehicle Creator : références livrées, analyse, génération locale réelle, textures, réouverture."""
+    import tempfile
+    from pathlib import Path
+
+    from lsfcars.ai.creator import AIVehicleCreator
+    from lsfcars.ai.engines.base import JobContext
+    from lsfcars.ai.engines.triposr import worker_script
+    from lsfcars.ai.manager import AIEngineManager
+    from lsfcars.project.session import ProjectSession
+    from lsfcars.ui.ai.engines_dialog import install_script
+
+    try:
+        folder = Path(tempfile.mkdtemp(prefix="lsfcars-smoke-ia-"))
+        session = ProjectSession.create(folder, "IA")
+        manager = AIEngineManager(folder / "data", folder / "engines")
+        manager.detect_all(include_hardware=False)
+        creator = AIVehicleCreator(session, manager)
+        for path in sorted((samples_dir() / "references").glob("demo_*.png")):
+            creator.add_reference(path)
+        report = creator.analyze()
+        outcome = creator.generation_job("lsf-silhouette", "eco")(JobContext())
+        record = creator.record(creator.apply_generation(outcome))
+        node = creator.mesh_nodes([record["root_id"]])[0]
+        textures = creator.texture_job(node.id, "projection", 256)(JobContext())
+        creator.apply_textures(textures)
+        session.save()
+        reopened = AIVehicleCreator(ProjectSession.open(session.file_path), manager)
+        ok = (
+            len(reopened.references()) == 5
+            and report["fields"]["type"]["value"] == "sedan"
+            and reopened.records()[0]["status"] == "succeeded"
+            and outcome.import_result.triangle_count > 1000
+            and textures.stats.get("projected_ratio", 0) > 0.3
+            and worker_script().is_file()
+            and install_script() is not None
+        )
+        manager.shutdown()
+        log.info(
+            "Test de démarrage : AI Vehicle Creator %s (%d triangles générés, moteurs : %s)",
+            "OK" if ok else "ÉCHEC",
+            outcome.import_result.triangle_count,
+            ", ".join(f"{k}={v.status.value}" for k, v in manager.availability.items()),
+        )
+        return ok
+    except Exception:  # noqa: BLE001 (un échec du test doit se traduire par un code de retour)
+        log.exception("Test de démarrage : AI Vehicle Creator en échec")
         return False
 
 

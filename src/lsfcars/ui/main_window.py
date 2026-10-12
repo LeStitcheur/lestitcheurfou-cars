@@ -27,6 +27,7 @@ from lsfcars.project import recent, recovery
 from lsfcars.project.model import VehicleRole, VehicleType
 from lsfcars.project.session import ProjectSession
 from lsfcars.project.store import PROJECT_EXTENSION, ProjectError
+from lsfcars.ui.ai.page import AIVehicleCreatorPage
 from lsfcars.ui.design import apply_design, icons
 from lsfcars.ui.design import tokens as t
 from lsfcars.ui.design.components import LSModal, NotificationCenter, tooltip
@@ -57,8 +58,6 @@ PROJECT_FILTER = f"Projets {APP_NAME} (*{PROJECT_EXTENSION})"
 RESIZE_MARGIN = 6
 UPCOMING_ICONS = {
     "configs": "sliders-horizontal",
-    "ai": "sparkles",
-    "lore": "scroll-text",
     "optimize": "gauge",
     "export": "package",
 }
@@ -111,9 +110,21 @@ def nav_entries() -> list[NavEntry]:
             "Personnalisation",
             tooltip="Variantes LSPD, Sheriff, EMS, SAMD, Fire : équipements, feux, motifs, sirènes",
         ),
+        NavEntry(
+            "ai",
+            "AI Vehicle Creator",
+            "sparkles",
+            "Outils",
+            tooltip="Références → analyse → génération 3D (locale ou cloud) → corrections → Vehicle Editor",
+        ),
+        NavEntry(
+            "lore",
+            "Lore Friendly",
+            "scroll-text",
+            "Outils",
+            tooltip="Marques et noms fictifs, propositions d'adaptation, provenance (AI Vehicle Creator)",
+        ),
         soon("configs"),
-        soon("ai"),
-        soon("lore"),
         soon("optimize"),
         soon("export"),
         NavEntry("settings", "Paramètres", "settings", "Système"),
@@ -157,6 +168,7 @@ class MainWindow(QMainWindow):
         self.emergency = EmergencyPage(self.controller, self.settings)
         self.livery = LiveryPage(self.controller, self.settings)
         self.livery.emergency_page = self.emergency
+        self.ai = AIVehicleCreatorPage(self.controller, self.settings)
         self.materials_page = MaterialsPage(self.controller)
         self.settings_page = SettingsPage(self.settings)
         self.diagnostics_page = DiagnosticsPage()
@@ -168,6 +180,7 @@ class MainWindow(QMainWindow):
             "import": self.import_page,
             "emergency": self.emergency,
             "liveries": self.livery,
+            "ai": self.ai,
             "materials": self.materials_page,
             "settings": self.settings_page,
             "diagnostics": self.diagnostics_page,
@@ -287,6 +300,8 @@ class MainWindow(QMainWindow):
         self.import_page.imported.connect(self._on_resource_imported)
         self.emergency.editor_requested.connect(lambda: self.navigate("studio"))
         self.livery.editor_requested.connect(lambda: self.navigate("studio"))
+        self.ai.editor_requested.connect(lambda: self.navigate("studio"))
+        self.ai.livery_requested.connect(lambda: self.navigate("liveries"))
         self.settings_page.settings_changed.connect(self._on_setting)
 
     # --- Navigation ---------------------------------------------------------
@@ -294,6 +309,8 @@ class MainWindow(QMainWindow):
         widget = self.stack.currentWidget()
         if getattr(self, "_library_shown", False) and widget is self.studio:
             return "library"
+        if getattr(self, "_lore_shown", False) and widget is self.ai:
+            return "lore"
         return next((k for k, p in self.pages.items() if p is widget), "dashboard")
 
     def navigate(self, key: str) -> None:
@@ -305,6 +322,13 @@ class MainWindow(QMainWindow):
             self._library_shown = True
             return
         self._library_shown = False
+        if key == "lore":  # l'assistant Lore Friendly vit dans AI Vehicle Creator (onglet de gauche)
+            self.navigate("ai")
+            self.ai.left.setCurrentIndex(2)
+            self.sidebar.set_current("lore")
+            self._lore_shown = True
+            return
+        self._lore_shown = False
         page = self.pages.get(key)
         if page is None:
             return
@@ -716,6 +740,7 @@ class MainWindow(QMainWindow):
         self.livery.save_layout()
         self.studio.bottom.log_panel.detach()
         self.import_page.shutdown()
+        self.ai.manager.shutdown()  # tâches IA annulées (processus de moteurs arrêtés)
         QApplication.instance().removeEventFilter(self)
         log.info("Fermeture de l'application")
         event.accept()

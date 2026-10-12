@@ -42,6 +42,8 @@ def release_qt_caches_at_exit():
 def isolated_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     home = tmp_path / "lsfcars-home"
     monkeypatch.setenv("LSFCARS_HOME", str(home))
+    # moteurs IA locaux isolés : les tests ne dépendent pas de ce qui est installé sur la machine
+    monkeypatch.setenv("LSFCARS_ENGINES", str(tmp_path / "lsfcars-engines"))
     return home
 
 

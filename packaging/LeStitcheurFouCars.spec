@@ -49,6 +49,9 @@ datas = [
     (str(ROOT / "samples" / "vehicule_test.obj"), "samples"),
     (str(ROOT / "samples" / "vehicule_livree.glb"), "samples"),
     (str(ROOT / "samples" / "fivem"), "samples/fivem"),
+    (str(ROOT / "samples" / "references"), "samples/references"),
+    (str(ROOT / "src" / "lsfcars" / "ai" / "workers"), "lsfcars/ai/workers"),  # lancé par le Python du moteur
+    (str(ROOT / "scripts" / "install_triposr.ps1"), "scripts"),
     (str(ROOT / "src" / "lsfcars" / "resources"), "lsfcars/resources"),
 ]
 datas += collect_data_files("trimesh")

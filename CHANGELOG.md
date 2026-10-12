@@ -5,6 +5,72 @@ versionnement [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+## [0.7.0] - 2026-10-12
+
+AI Vehicle Creator : création 3D assistée, hybride locale / cloud, dans le design Dark Premium.
+
+### Modifié
+
+- Les ateliers « Intelligence artificielle » et « Lore Friendly » marqués « Bientôt » deviennent
+  **AI Vehicle Creator** (fonctionnel) ; l'entrée « Lore Friendly » ouvre son onglet dédié.
+- Le document de projet `ai` (format 1) s'ajoute au `.lsfc` sans changement de schéma (v6) : un
+  projet 0.6 s'ouvre tel quel.
+- Test de démarrage (`--smoke-test`) : vérifie aussi AI Vehicle Creator (code de sortie 8).
+
+### Ajouté (fonctionnel, testé)
+
+- **AI Engine Manager** : interface commune des adaptateurs (nom, version, capacités, formats,
+  ressources, authentification, limites, coûts, licence, niveau de vérification) ; détection du
+  matériel (GPU, VRAM, CUDA, RAM, CPU, disque, dépendances) ; profils Économique / Équilibré /
+  Haute qualité fondés sur le moteur et le matériel ; **Auto AI Routing** expliqué (moteurs
+  retenus et écartés avec leur raison) et choix manuel ; file de tâches par ressource avec
+  progression, annulation, délai maximal ; cache des résultats ; nettoyage des temporaires.
+- **Moteur local LSF Silhouette** (intégré, algorithme déterministe) : reconstruction multi-vues
+  par enveloppe visuelle, surface nets, lissage de Taubin, couleurs projetées ; vues absentes
+  remplacées par des sections estimées et signalées.
+- **Moteur local TripoSR** (MIT, installation séparée par `scripts/install_triposr.ps1` ou
+  « Moteurs → Installer… ») : inférence dans un processus séparé, annulable, sans
+  téléchargement implicite. Génération réelle vérifiée sur RTX 3060 Ti (18 s, 105 204
+  triangles, 2,4 Go de VRAM).
+- **Adaptateurs Meshy** (image et multi-images → 3D, textures, PBR), **Claude / Anthropic**
+  (analyse d'images, suggestions Lore Friendly) et **ComfyUI** (workflow API de l'utilisateur,
+  nœuds vérifiés) ; contrats des API documentées, **testés contre des serveurs simulés**.
+- **Clés API** dans un coffre chiffré par Windows (DPAPI) ou en variable d'environnement, jamais
+  dans un projet ni un journal ; test de connexion gratuit ; confirmation avant tout transfert
+  cloud et toute opération payante ; reprises contrôlées ; journal des requêtes sans contenu.
+- **Reference Studio** : import multiple, vues, ordre, rotation, miroir, recadrage, réglages,
+  annotations (dont logos réels), comparaison, détourage, provenance et licence, zones estimées.
+- **Vehicle Vision Analyzer** : type proposé (score), proportions, profil de toit, roues, garde au
+  sol, couleurs, vitrages, optiques, incohérences entre vues ; rapport éditable, mesures marquées
+  approximatives ; section cloud distincte.
+- **Génération** : validation du fichier produit, import comme fichier du projet avec
+  provenance, recalage automatique (axe vertical, longueur, sol, échelle ; ACP et plan d'appui
+  pour les sorties de réseaux), retournement 180°, recalage sur les proportions mesurées.
+- **Lore Friendly AI Assistant** : marques et noms fictifs originaux filtrés (marques réelles et
+  de l'univers GTA), trois propositions (légère, équilibrée, originale), ajustements
+  géométriques applicables, masquage des logos annotés, registre de provenance et avertissement
+  juridique (aucune certification Rockstar / Cfx.re).
+- **AI Mesh Assistant** : diagnostics exacts, corrections déterministes annulables (normales,
+  doublons, fusion, trous, lissage, simplification, petites pièces, symétrie, UV), suggestions
+  heuristiques, opérations soumises à validation humaine.
+- **AI Texture Creator** : UV d'atlas, couleur de base projetée depuis les références ou cuite
+  depuis les couleurs par sommet, normal map dérivée, roughness / metallic par règles, variantes
+  de teinte, application au modèle, ouverture dans Livery Studio ; origine de chaque carte
+  affichée (aucune AO locale).
+- **Historique des générations** : moteur, version, paramètres, consigne, date, durée, coût
+  estimé et communiqué, statut, erreurs, fichiers, miniature ; réouvrir, dupliquer, comparer,
+  réutiliser les paramètres, supprimer.
+- Références de démonstration originales (`samples/references`, rendus du véhicule d'essai).
+
+### Limites connues
+
+- TripoSR n'exploite qu'une image ; proportions approximatives ; couleurs par sommet seulement.
+- Aucune génération cloud réelle exécutée (aucune clé) ; ComfyUI réel non testé.
+- Stability AI et Tripo non intégrés (contrat non vérifié) ; Hunyuan3D-2 exclu (licence
+  inapplicable dans l'UE) ; TRELLIS non validé sous Windows.
+- Détourage local limité aux fonds unis ou aux images transparentes ; analyse par règles.
+- Aucun modèle généré n'est utilisable en jeu sans préparation FiveM complète.
+
 ## [0.6.0] - 2026-10-12
 
 Livery Studio Pro : éditeur de livrées 2D / 3D intégré, dans le design Dark Premium.

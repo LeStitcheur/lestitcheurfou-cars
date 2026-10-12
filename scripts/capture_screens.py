@@ -338,7 +338,66 @@ def screens(width: int, height: int, scale: str) -> None:
 
     def step_livery_variants_capture() -> None:
         grab("livery_variantes")
-        finish()
+        step_ai()
+
+    def step_ai() -> None:
+        from lsfcars.ai.engines.base import JobContext
+
+        window.navigate("ai")
+        page = window.ai
+        page.wait_idle(120000)
+        page.manager.detect_all()  # résultat réel de la machine de capture
+        page.after_detection()
+        page.import_references(sorted((ROOT / "samples" / "references").glob("demo_*.png")))
+        creator = page.creator
+        creator.analyze(known_length=4.4)
+        outcome = creator.generation_job("lsf-silhouette", "balanced")(JobContext())
+        record_id = creator.apply_generation(outcome)
+        root = creator.record(record_id)["root_id"]
+        session = window.controller.session
+        for other in [n.id for n in session.scene.roots() if n.id != root]:
+            session.set_visible([other], False)
+        page.last_root = root
+        node = creator.mesh_nodes([root])[0]
+        textures = creator.texture_job(node.id, "projection", 1024)(JobContext())
+        creator.apply_textures(textures)
+        page.texture_outcome = textures
+        page.textures.show_outcome(textures)
+        page.generation.result.setText(
+            f"Modèle généré par LSF Silhouette en {outcome.duration_s:.1f} s "
+            f"({outcome.import_result.triangle_count} triangles)."
+        )
+        page.set_view_mode("split")
+        page.left.setCurrentIndex(0)
+        page.right.setCurrentIndex(0)
+        page.refresh()
+        page.references.list.setCurrentRow(3)
+        session.selection.clear()  # texture lisible (pas de teinte de sélection)
+        page.viewport.camera.set_view(-35, 14)
+        page.frame_model()
+        QTimer.singleShot(700, step_ai_capture)
+
+    def step_ai_capture() -> None:
+        grab("ai_creator")
+        page = window.ai
+        page.right.setCurrentIndex(1)
+        page.mesh.analyze()
+        page.left.setCurrentIndex(1)
+        page.analysis.refresh()
+        page.bottom.setCurrentWidget(page.jobs_panel)
+        QTimer.singleShot(500, lambda: (grab("ai_maillage"), step_ai_engines()))
+
+    def step_ai_engines() -> None:
+        page = window.ai
+        page.creator.generate_proposals()
+        page.creator.select_proposal(1)
+        page.left.setCurrentIndex(2)
+        page.right.setCurrentIndex(3)
+        page.bottom.setCurrentWidget(page.hardware)
+        page.v_split.setSizes([620, 330])
+        page.refresh()
+        page.history.list.setCurrentRow(0)
+        QTimer.singleShot(500, lambda: (grab("ai_moteurs"), finish()))
 
     def finish() -> None:
         session = window.controller.session

@@ -149,24 +149,6 @@ UPCOMING: tuple[Upcoming, ...] = (
         ("Extras et modkits", "Variantes de couleurs", "Gestion des déclinaisons"),
     ),
     Upcoming(
-        "ai",
-        "Outils",
-        "Intelligence artificielle",
-        "Propositions 3D générées à partir d'images de référence.",
-        (
-            "Adaptateurs IA locale et cloud interchangeables",
-            "Clés API hors du dépôt (coffre Windows)",
-            "File de génération et historique",
-        ),
-    ),
-    Upcoming(
-        "lore",
-        "Outils",
-        "Lore Friendly",
-        "Adaptation des véhicules à l'univers de Los Santos.",
-        ("Retrait des marques réelles", "Noms et badges fictifs", "Contrôle de conformité"),
-    ),
-    Upcoming(
         "optimize",
         "Outils",
         "Optimisation",

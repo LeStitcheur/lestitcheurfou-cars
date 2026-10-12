@@ -123,6 +123,37 @@ Principe : le document de livrée est un JSON (`documents["livery"]`) ; les pixe
 `ImageBuffer` de `SceneGraph.images`. La composition est publiée dans `session.live_textures`
 et envoyée au GPU par région modifiée : tous les viewports affichent la livrée.
 
+### Ajouts v0.7 (AI Vehicle Creator)
+
+```
+src/lsfcars/
+├── ai/                     logique sans Qt
+│   ├── engines/base.py     interface commune : EngineInfo, Capability, JobContext, requêtes
+│   ├── engines/silhouette.py   reconstruction multi-vues intégrée (enveloppe visuelle)
+│   ├── engines/triposr.py  moteur local TripoSR (processus séparé, annulable)
+│   ├── engines/comfyui.py  workflow API de l'utilisateur (HTTP local)
+│   ├── engines/meshy.py    cloud 3D (API openapi/v1)
+│   ├── engines/anthropic.py    cloud vision / suggestions (Messages API)
+│   ├── workers/triposr_worker.py   exécuté par le Python du moteur (jamais importé)
+│   ├── manager.py          registre, configuration, Auto AI Routing, JobQueue, cache
+│   ├── hardware.py         GPU, VRAM, CUDA, RAM, CPU, disque, dépendances
+│   ├── secrets.py          coffre DPAPI des clés API (hors projets)
+│   ├── http.py             délais, reprises contrôlées, erreurs classées, journal sans contenu
+│   ├── references.py       Reference Studio : préparation, détourage, couverture
+│   ├── vision.py           Vehicle Vision Analyzer (règles locales)
+│   ├── lore.py             noms fictifs filtrés, propositions, déformations, provenance
+│   ├── mesh_assist.py      diagnostics, corrections déterministes, suggestions
+│   ├── texture.py          atlas UV, projection des références, cartes dérivées
+│   ├── raster3d.py         rendu logiciel (miniatures, références de démonstration)
+│   └── creator.py          AIVehicleCreator : document « ai », historique, application
+└── ui/ai/                  page, panneaux, tableau des références, paramètres des moteurs
+```
+
+Principe : les tâches longues sont des fonctions `job(ctx)` exécutées par la `JobQueue` (un fil
+par ressource) ; un `JobBridge` Qt relaie leurs notifications vers l'interface, où le résultat
+est appliqué au projet par des commandes annulables. Les moteurs locaux lourds (TripoSR) vivent
+hors de l'application dans leur propre environnement Python.
+
 ## Format de projet `.lsfc`
 
 Base SQLite, écrite dans un fichier temporaire puis substituée (`os.replace`) : un plantage
@@ -137,9 +168,9 @@ et ne modifie jamais le fichier.
 | `nodes` | hiérarchie : parent, rang, nom, type, transformation (JSON), visibilité, verrou, asset, maillage, matériau, `extra` (JSON, format 3 : métadonnées d'origine GTA V) |
 | `resources` | format 3 : ressources FiveM importées — nom, source, type de source, statut, date, `manifest` (JSON versionné) |
 | `meshes` | format 4 : géométrie locale (clé, nom, npz compressé : positions, indices, normales, couleurs, UV) |
-| `documents` | format 5 : documents de studio (clé, JSON), ex. `emergency`, `livery` |
+| `documents` | format 5 : documents de studio (clé, JSON), ex. `emergency`, `livery`, `ai` (v0.7) |
 | `images` | format 6 : calques raster et masques (clé, largeur, hauteur, canaux, PNG) |
-| `blobs` | format 6 : logos et polices importés (clé = empreinte SHA-256, octets) |
+| `blobs` | format 6 : logos, polices, images de référence et miniatures IA (clé = empreinte, octets) |
 | `thumbnail` | miniature PNG |
 
 Historique : format 1 (v0.1, table `scene_objects`), format 2 (v0.2), format 3 (v0.3), format 4

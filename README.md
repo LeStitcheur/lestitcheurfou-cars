@@ -5,9 +5,11 @@
 
 Atelier Windows de création, d'adaptation et d'export de véhicules **Lore Friendly** pour **GTA V / FiveM**.
 
-> Statut : **v0.6.0 — Livery Studio Pro : livrées 2D / 3D, peinture sur la carrosserie, calques, logos, export**.
+> Statut : **v0.7.0 — AI Vehicle Creator : références, analyse, génération 3D locale ou cloud, corrections, textures, Lore Friendly**.
 > Voir [CHANGELOG.md](CHANGELOG.md) pour ce qui fonctionne réellement aujourd'hui.
 
+![AI Vehicle Creator — références, génération et modèle](docs/screenshots/1920x1080@1_ai_creator.png)
+![AI Vehicle Creator — moteurs, routage et historique](docs/screenshots/1920x1080@1_ai_moteurs.png)
 ![Livery Studio — livrée LSPD peinte en 3D](docs/screenshots/1920x1080@1_livery_studio.png)
 ![Livery Studio — vue UV, calques et propriétés](docs/screenshots/1920x1080@1_livery_uv_calques.png)
 ![Emergency Studio — variante LSPD](docs/screenshots/1920x1080@1_emergency_studio.png)
@@ -31,10 +33,20 @@ LeStitcheurFou Cars a pour objectif de permettre de :
 
 Tous les types de véhicules sont prévus : voitures, SUV, motos, camions, bateaux, hélicoptères, aéronefs.
 
-## Fonctionnalités de la v0.6.0
+## Fonctionnalités de la v0.7.0
 
 | Fonction | État |
 |---|---|
+| **AI Vehicle Creator** : Reference Studio, analyse, génération, assistant maillage, textures, Lore Friendly, historique | ✅ |
+| AI Engine Manager : interface commune des moteurs, détection matérielle, profils, Auto AI Routing, file de tâches, cache | ✅ |
+| Génération locale **LSF Silhouette** (multi-vues, algorithme déterministe, intégré) | ✅ génération réelle |
+| Génération locale **TripoSR** (réseau de neurones, une image, installation séparée) | ✅ génération réelle (GPU testé : RTX 3060 Ti) |
+| Adaptateurs **Meshy** (cloud 3D), **Claude** (analyse, Lore), **ComfyUI** (workflow utilisateur) | ⚠️ testés contre serveurs simulés seulement |
+| Clés API chiffrées (DPAPI), confirmation avant transfert cloud et opération payante | ✅ |
+| Vehicle Vision Analyzer (proportions, roues, couleurs, incohérences ; mesures approximatives) | ✅ (règles locales) |
+| AI Mesh Assistant (diagnostics exacts, corrections déterministes annulables, suggestions, validation humaine) | ✅ |
+| AI Texture Creator (projection des références, normal map dérivée, cartes par règles, variantes) | ✅ (pas d'AO locale) |
+| Lore Friendly : marques et noms fictifs filtrés, 3 propositions, ajustements géométriques, provenance | ✅ (aucune certification) |
 | **Livery Studio** : vue 3D, vue UV 2D, vue partagée ; calques raster / vecteur / texte / image / bandes 3D / groupes / masques | ✅ |
 | Peinture 3D réelle sur la carrosserie (texels modifiés, coutures UV, symétrie 3D, pression tablette) | ✅ |
 | Canvas 2D : zoom, règles, guides, UV, sélection, lasso, transformation, copier / coller | ✅ |
@@ -76,8 +88,9 @@ Tous les types de véhicules sont prévus : voitures, SUV, motos, camions, batea
 | Blender / Sollumz : détection et sondage réels, tâches annulables | ✅ (Sollumz non testé : non installé) |
 | Collisions `.ybn` (géométrie), export FiveM, écriture des formats GTA V | 🕓 non implémentés |
 | Matériaux, projets, sauvegarde auto (v0.2) | ✅ |
-| IA, Optimisation, Export FiveM complet (YFT, YTD) | 🕓 « Bientôt », non fonctionnels |
+| Optimisation, Export FiveM complet (YFT, YTD) | 🕓 « Bientôt », non fonctionnels |
 
+AI Vehicle Creator, moteurs, cloud et limites : [docs/AI_VEHICLE_CREATOR.md](docs/AI_VEHICLE_CREATOR.md).
 Livery Studio, peinture 3D et export : [docs/LIVERY_STUDIO.md](docs/LIVERY_STUDIO.md).
 Emergency Studio, adaptateurs et limites : [docs/EMERGENCY_STUDIO.md](docs/EMERGENCY_STUDIO.md).
 Vehicle Editor, outils et limites : [docs/VEHICLE_EDITOR.md](docs/VEHICLE_EDITOR.md).
@@ -106,6 +119,7 @@ addon de démonstration (synthétique) : `python scripts\generate_demo_addon.py`
 ## Documentation
 
 - [Guide utilisateur](docs/GUIDE_UTILISATEUR.md)
+- [AI Vehicle Creator](docs/AI_VEHICLE_CREATOR.md)
 - [Livery Studio](docs/LIVERY_STUDIO.md)
 - [Emergency Studio](docs/EMERGENCY_STUDIO.md)
 - [Vehicle Editor](docs/VEHICLE_EDITOR.md)

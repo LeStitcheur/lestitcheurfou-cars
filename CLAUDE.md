@@ -66,6 +66,25 @@ Ne pas utiliser `NoButtons` sur les QDoubleSpinBox (valeur invisible avec la feu
   sans Blender). Ne jamais promettre la jouabilité FiveM d'un véhicule modifié.
 - Détails : `docs/VEHICLE_EDITOR.md`.
 
+## AI Vehicle Creator (v0.7)
+
+- `ai/` (sans Qt) : `manager.py` (registre, configuration, routage, `JobQueue`, cache),
+  `engines/` (`base.py` interface commune ; `silhouette.py` intégré ; `triposr.py` + worker
+  `workers/triposr_worker.py` lancé par le Python du moteur ; `comfyui.py`, `meshy.py`,
+  `anthropic.py`), `hardware.py`, `secrets.py` (DPAPI), `http.py` (reprises, journal sans
+  contenu), `references.py`, `vision.py`, `lore.py`, `mesh_assist.py`, `texture.py`,
+  `raster3d.py` (miniatures), `creator.py` (`AIVehicleCreator`, document `ai`). Interface :
+  `ui/ai/`.
+- État dans `documents["ai"]` (format 1) + blobs `ref-*` / `thumb-*` ; modèles générés importés
+  comme fichiers du projet ; annexes dans `assets/ai/<id>/`. Schéma `.lsfc` inchangé (v6).
+- Moteurs locaux hors dépôt et hors exe : `%USERPROFILE%\.lestitcheurfoucars\engines`
+  (`LSFCARS_ENGINES`) ; tests isolés par `conftest.py`. Jamais de clé API en dur, dans un
+  projet ou un journal.
+- Ne jamais présenter un adaptateur comme vérifié s'il n'a été testé que contre un serveur
+  simulé (`SIMULATED_ONLY`) ; aucun transfert cloud ni opération payante sans confirmation ;
+  ne jamais afficher de coût inventé ; un maillage généré n'est jamais « compatible FiveM ».
+- Détails : `docs/AI_VEHICLE_CREATOR.md`.
+
 ## Livery Studio (v0.6)
 
 - `livery/` : `model.py` (document versionné, calques, variantes), `surface.py` (UV ↔ 3D, pinceau
