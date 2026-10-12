@@ -39,6 +39,8 @@ TRIPOSR_DOWNLOADS = (
     "Dépendances (transformers, trimesh, PyMCubes, imageio…) — environ 150 Mo",
     "Code TripoSR (GitHub VAST-AI-Research/TripoSR, licence MIT) — quelques Mo",
     "Poids stabilityai/TripoSR (Hugging Face, licence MIT) — environ 1,7 Go",
+    "Détourage : onnxruntime (PyPI) et modèle U²-Net u2net.onnx (GitHub danielgatis/rembg, "
+    "Apache-2.0) — environ 190 Mo",
 )
 
 

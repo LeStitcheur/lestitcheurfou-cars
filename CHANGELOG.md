@@ -5,6 +5,16 @@ versionnement [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Corrigé
+
+- TripoSR : « Détourage impossible » sur les vraies photos (décor, route, parking). Le fond est
+  désormais retiré par le réseau **U²-Net** (modèle Apache-2.0 distribué par le projet rembg,
+  exécuté avec onnxruntime dans l'environnement du moteur) quand l'image n'est pas déjà
+  détourée ; le détourage local (fond uni) ne sert plus qu'en dernier recours, avec un message
+  indiquant comment installer U²-Net. Le script d'installation ajoute l'étape (≈ 190 Mo,
+  empreinte MD5 vérifiée) et peut être relancé sur une installation existante. La méthode de
+  détourage utilisée est indiquée dans l'historique de la génération.
+
 ## [0.8.0] - 2026-10-12
 
 Lore Friendly Engine : transformer un véhicule de référence en création originale cohérente avec

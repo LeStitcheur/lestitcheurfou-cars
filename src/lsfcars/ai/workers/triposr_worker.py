@@ -8,7 +8,9 @@ Communique par lignes JSON sur la sortie standard :
   {"progress": 0.4, "text": "..."}   {"done": "<chemin>", "stats": {...}}   {"error": "..."}
 
 Le dépôt TripoSR (MIT) n'est pas modifié : ``torchmcubes`` (extension à compiler) est remplacé
-par PyMCubes et ``rembg`` n'est pas nécessaire (le détourage est fourni par l'application).
+par PyMCubes et ``rembg`` n'est pas importé. Avec ``--u2net <modèle.onnx>``, le fond est retiré
+par le réseau U²-Net (Apache-2.0, modèle distribué par le projet rembg) exécuté avec
+onnxruntime, selon le même prétraitement que rembg.
 """
 
 from __future__ import annotations
@@ -57,6 +59,28 @@ def install_stubs() -> None:
         sys.modules["rembg"] = stub
 
 
+def u2net_alpha(image, model_path: str):  # type: ignore[no-untyped-def]
+    """Masque de premier plan (0-255) par U²-Net : prétraitement identique à rembg (320², ImageNet)."""
+    import numpy as np
+    import onnxruntime as ort
+    from PIL import Image
+
+    providers = [
+        p for p in ("CUDAExecutionProvider", "CPUExecutionProvider") if p in ort.get_available_providers()
+    ]
+    session = ort.InferenceSession(model_path, providers=providers)
+    rgb = image.convert("RGB")
+    small = np.asarray(rgb.resize((320, 320), Image.Resampling.LANCZOS)).astype(np.float32)
+    small /= max(float(small.max()), 1e-6)
+    mean, std = np.array([0.485, 0.456, 0.406]), np.array([0.229, 0.224, 0.225])
+    tensor = ((small - mean) / std).transpose(2, 0, 1)[None].astype(np.float32)
+    prediction = session.run(None, {session.get_inputs()[0].name: tensor})[0][0, 0]
+    low, high = float(prediction.min()), float(prediction.max())
+    prediction = (prediction - low) / max(high - low, 1e-6)
+    mask = Image.fromarray((prediction * 255).astype(np.uint8)).resize(rgb.size, Image.Resampling.LANCZOS)
+    return mask
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--src", required=True)
@@ -67,6 +91,7 @@ def main() -> int:
     parser.add_argument("--chunk-size", type=int, default=8192)
     parser.add_argument("--device", default="cuda")
     parser.add_argument("--foreground-ratio", type=float, default=0.85)
+    parser.add_argument("--u2net", default="", help="modèle U²-Net (.onnx) : détourage neuronal de l'image")
     args = parser.parse_args()
     start = time.monotonic()
     try:
@@ -90,6 +115,17 @@ def main() -> int:
         model.to(device)
         emit(progress=0.35, text="Préparation de l'image")
         image = Image.open(args.input).convert("RGBA")
+        if args.u2net:
+            emit(progress=0.38, text="Détourage neuronal (U²-Net)")
+            mask = u2net_alpha(image, args.u2net)
+            coverage = float((np.asarray(mask) >= 128).mean())
+            if coverage < 0.01 or coverage > 0.97:
+                raise RuntimeError(
+                    f"Détourage U²-Net : aucun sujet distinct du fond (couverture {coverage:.0%}). "
+                    "Cadrez le véhicule entier sur l'image ou fournissez un PNG détouré."
+                )
+            image.putalpha(mask)
+            image.save(args.input.replace(".png", "_u2net.png"))  # contrôle visuel du détourage
         image = resize_foreground(image, args.foreground_ratio)
         array = np.asarray(image).astype(np.float32) / 255.0
         rgb = array[:, :, :3] * array[:, :, 3:4] + (1 - array[:, :, 3:4]) * 0.5

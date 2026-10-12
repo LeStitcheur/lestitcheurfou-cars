@@ -278,3 +278,67 @@ def test_triposr_real_generation(tmp_path):
     assert result.triangle_count > 10000
     assert output.used_views == ["three_quarter"]  # une seule image exploitée, signalé
     assert output.data["stats"]["faces"] == result.triangle_count
+
+
+def cluttered_photo(path: Path) -> Path:
+    """Véhicule de démonstration posé sur un décor non uniforme (ciel en dégradé, route bruitée)."""
+    from PIL import Image
+
+    car = Image.open(REFERENCES / "demo_trois_quarts.png").convert("RGB")
+    w, h = car.size
+    rng = np.random.default_rng(3)
+    y = np.linspace(0, 1, h)[:, None, None]
+    sky = np.array([90, 140, 200]) * (1 - y) + np.array([60, 60, 65]) * y
+    background = np.clip(sky + rng.normal(0, 28, (h, w, 3)), 0, 255)
+    pixels = np.asarray(car).astype(np.int16)
+    car_mask = np.abs(pixels - pixels[0, 0]).sum(axis=2) > 30
+    composed = np.where(car_mask[..., None], pixels, background).astype(np.uint8)
+    Image.fromarray(composed).save(path)
+    return path
+
+
+def test_matting_choice_and_explicit_failure(tmp_path):
+    from PIL import Image
+
+    from lsfcars.ai.errors import InvalidOutput
+
+    photo = cluttered_photo(tmp_path / "photo.png")
+    assert not refs_mod.segment(Image.open(photo)).ok  # le détourage local échoue sur ce décor
+    engine = TripoSREngine({"root": str(tmp_path / "triposr")})
+    with pytest.raises(InvalidOutput, match="U²-Net"):
+        engine.prepare_input(ReferenceInput(photo, "three_quarter"), tmp_path)
+    (tmp_path / "triposr" / "models").mkdir(parents=True)
+    (tmp_path / "triposr" / "models" / "u2net.onnx").write_bytes(b"onnx")
+    (tmp_path / "triposr" / "env" / "Lib" / "site-packages" / "onnxruntime").mkdir(parents=True)
+    source, method = engine.prepare_input(ReferenceInput(photo, "three_quarter"), tmp_path)
+    assert method == "u2net" and source.is_file()  # détourage confié au réseau (processus du moteur)
+    transparent = tmp_path / "detoure.png"
+    image = Image.open(REFERENCES / "demo_trois_quarts.png").convert("RGBA")
+    image.putalpha(Image.fromarray((np.asarray(image.convert("L")) < 200).astype(np.uint8) * 255))
+    image.save(transparent)
+    assert engine.prepare_input(ReferenceInput(transparent, "three_quarter"), tmp_path)[1] == "transparence"
+
+
+@pytest.mark.skipif(
+    bool(TRIPOSR.missing()) or not TRIPOSR.matting_available(),
+    reason="TripoSR ou le détourage U²-Net non installé (scripts/install_triposr.ps1)",
+)
+def test_triposr_real_generation_on_cluttered_photo(tmp_path):
+    from PIL import Image
+
+    from lsfcars.ai import hardware
+
+    photo = cluttered_photo(tmp_path / "photo.png")
+    request = GenerationRequest(
+        Capability.IMAGE_TO_3D,
+        [ReferenceInput(photo, "three_quarter")],
+        tmp_path / "job",
+        "eco",
+        vehicle={"_hardware": hardware.detect(include_dependencies=False)},
+    )
+    output = TRIPOSR.run(request, JobContext(timeout=900))
+    assert output.data["matting"] == "u2net"
+    assert load_model(output.files["model"]).triangle_count > 10000
+    cut = Image.open(tmp_path / "job" / "triposr_input_u2net.png")
+    coverage = (np.asarray(cut.getchannel("A")) >= 128).mean()
+    assert 0.05 < coverage < 0.8  # véhicule séparé du décor

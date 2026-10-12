@@ -18,6 +18,7 @@ pytest-report.xml
 # --- Build / PyInstaller ---
 build/
 dist/
+dist_build/
 
 # --- IDE / OS ---
 .vscode/

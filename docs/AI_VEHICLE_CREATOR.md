@@ -109,7 +109,9 @@ sur les proportions mesurées » corrige l'échelle d'après l'analyse.
   invisibles ne sont jamais présentées comme reconstruites.
 
 Le détourage local exploite la transparence de l'image, ou à défaut un **fond uni**. Sur une
-photo avec décor, il échoue et le signale ; utilisez alors une image détourée.
+photo avec décor, il échoue et le signale. Pour TripoSR, le fond d'une photo est retiré par le
+réseau **U²-Net** (installé avec le moteur, voir plus bas) ; LSF Silhouette demande toujours des
+profils détourés ou sur fond uni.
 
 ## Vehicle Vision Analyzer
 
@@ -262,11 +264,18 @@ lanceur Python `py`. Le script installe :
 - `uv` et Python 3.12 ;
 - PyTorch (CUDA 12.8, ou CPU sans GPU NVIDIA) ;
 - omegaconf, einops, transformers, huggingface-hub, trimesh, PyMCubes, imageio, Pillow ;
-- le code TripoSR (archive GitHub, MIT) et les poids `stabilityai/TripoSR` (Hugging Face, MIT).
+- le code TripoSR (archive GitHub, MIT) et les poids `stabilityai/TripoSR` (Hugging Face, MIT) ;
+- le détourage : `onnxruntime` et le modèle U²-Net `u2net.onnx` (≈ 176 Mo, publié par le projet
+  rembg, Apache-2.0), dans `triposr\models`, contrôlé par son empreinte MD5.
+
+Le script peut être relancé : les étapes déjà faites sont sautées (par exemple pour ajouter le
+détourage à une installation antérieure).
 
 L'inférence tourne dans un processus séparé, sans téléchargement implicite (`HF_HUB_OFFLINE=1`).
-L'extension `torchmcubes`, qui doit être compilée, est remplacée par PyMCubes, et `rembg` n'est
-pas utilisé puisque le détourage est fait par l'application.
+L'extension `torchmcubes`, qui doit être compilée, est remplacée par PyMCubes. Le paquet `rembg`
+n'est pas installé : son modèle U²-Net est exécuté directement avec onnxruntime, avec le même
+prétraitement. Ordre de détourage pour TripoSR : masque fourni, image déjà transparente, U²-Net,
+puis fond uni en dernier recours ; la méthode utilisée figure dans l'historique de la génération.
 
 ## Limites
 
@@ -274,7 +283,8 @@ pas utilisé puisque le détourage est fait par l'application.
   texture UV.
 - LSF Silhouette : il faut au moins un profil sur fond uni ou détouré. Il ne reconstruit pas les
   concavités, et une vue absente est remplacée par une section estimée.
-- Détourage local limité aux fonds unis ou aux images transparentes.
+- Détourage local limité aux fonds unis ou aux images transparentes ; U²-Net (TripoSR) peut
+  inclure des éléments du décor collés au véhicule ou rogner des pièces fines.
 - Analyse locale par règles : le type de véhicule et les mesures sont approximatifs, et les
   véhicules non routiers ne sont pas classés localement.
 - Aucune reconnaissance automatique locale des logos.

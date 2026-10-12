@@ -6,7 +6,12 @@
 #   - PyTorch (download.pytorch.org : CUDA 12.8 si un GPU NVIDIA est détecté, sinon CPU) ;
 #   - dépendances (omegaconf, einops, transformers, huggingface-hub, trimesh, PyMCubes, Pillow) ;
 #   - code TripoSR (archive GitHub VAST-AI-Research/TripoSR, MIT) ;
-#   - poids stabilityai/TripoSR (config.yaml, model.ckpt ~1,7 Go) et configuration DINO.
+#   - poids stabilityai/TripoSR (config.yaml, model.ckpt ~1,7 Go) et configuration DINO ;
+#   - détourage : onnxruntime (PyPI) et modèle U²-Net u2net.onnx (~176 Mo, GitHub
+#     danielgatis/rembg, Apache-2.0), contrôlé par empreinte MD5.
+#
+# Le script est relançable : les étapes déjà faites sont sautées (ajout du détourage à une
+# installation existante, par exemple).
 #
 # Usage : powershell -ExecutionPolicy Bypass -File scripts\install_triposr.ps1 [-EnginesDir <dossier>] [-Cpu]
 
@@ -21,7 +26,7 @@ $Tools = Join-Path $EnginesDir "tools"
 $env:UV_PYTHON_INSTALL_DIR = Join-Path $EnginesDir "python"
 $env:UV_CACHE_DIR = Join-Path $EnginesDir "uv-cache"
 
-function Step($index, $text) { Write-Output "LSF_STEP $index/7 $text" }
+function Step($index, $text) { Write-Output "LSF_STEP $index/8 $text" }
 
 New-Item -ItemType Directory -Force $Root | Out-Null
 
@@ -63,6 +68,20 @@ $env:HF_HOME = Join-Path $Root "hf"
 $weights = Join-Path $Root "weights"
 & $Python -c "from huggingface_hub import hf_hub_download as d; [d('stabilityai/TripoSR', f, local_dir=r'$weights') for f in ('config.yaml', 'model.ckpt')]; d('facebook/dino-vitb16', 'config.json')"
 
-Step 7 "Vérification"
-& $Python -c "import torch, mcubes, omegaconf, einops, transformers; print('torch', torch.__version__, 'cuda', torch.cuda.is_available())"
+Step 7 "Détourage neuronal (U²-Net)"
+& $Uv pip install --python $Python onnxruntime
+$models = Join-Path $Root "models"
+$u2net = Join-Path $models "u2net.onnx"
+$expected = "60024c5c889badc19c04ad937298a77b"  # empreinte publiée par le projet rembg
+if (-not (Test-Path $u2net) -or (Get-FileHash $u2net -Algorithm MD5).Hash.ToLower() -ne $expected) {
+    New-Item -ItemType Directory -Force $models | Out-Null
+    Invoke-WebRequest "https://github.com/danielgatis/rembg/releases/download/v0.0.0/u2net.onnx" -OutFile $u2net
+    if ((Get-FileHash $u2net -Algorithm MD5).Hash.ToLower() -ne $expected) {
+        Remove-Item $u2net
+        throw "Modèle U²-Net corrompu (empreinte MD5 inattendue) : téléchargement supprimé."
+    }
+}
+
+Step 8 "Vérification"
+& $Python -c "import torch, mcubes, omegaconf, einops, transformers, onnxruntime; print('torch', torch.__version__, 'cuda', torch.cuda.is_available(), 'onnxruntime', onnxruntime.__version__)"
 Write-Output "LSF_DONE $Root"

@@ -50,6 +50,12 @@ log = get_logger(__name__)
 NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)
 VIEW_PRIORITY = ("three_quarter", "left", "right", "front", "back", "top")
 MIN_VRAM_MB = 6000  # indication des auteurs : environ 6 Go pour une image (réglages par défaut)
+MATTING_LABELS = {
+    "masque": "masque fourni",
+    "transparence": "image déjà détourée (PNG transparent)",
+    "u2net": "neuronal (U²-Net, modèle Apache-2.0 du projet rembg)",
+    "fond uni": "local sur fond uni",
+}
 
 
 def default_engines_dir() -> Path:
@@ -213,6 +219,42 @@ class TripoSREngine(EngineAdapter):
         ]
 
     # --- Génération ---------------------------------------------------------------------------
+    @property
+    def matting_model(self) -> Path:
+        return self.root / "models" / "u2net.onnx"
+
+    def matting_available(self) -> bool:
+        """Détourage neuronal U²-Net installé (modèle + onnxruntime dans l'environnement du moteur)."""
+        site = self.root / "env" / ("Lib/site-packages" if sys.platform == "win32" else "lib")
+        has_runtime = any(site.glob("onnxruntime")) or any(site.glob("python3*/site-packages/onnxruntime"))
+        return self.matting_model.is_file() and has_runtime
+
+    def prepare_input(self, ref, out_dir: Path) -> tuple[Path, str]:  # type: ignore[no-untyped-def]
+        """Image d'entrée et méthode de détourage : masque fourni, transparence, U²-Net ou fond uni."""
+        image = Image.open(ref.path).convert("RGBA")
+        source = out_dir / "triposr_input.png"
+        alpha = np.asarray(image.getchannel("A"))
+        if ref.mask_path and Path(ref.mask_path).is_file():
+            image.putalpha(Image.open(ref.mask_path).convert("L").resize(image.size))
+            method = "masque"
+        elif alpha.min() < 250 and (alpha < 128).mean() > 0.02:
+            method = "transparence"  # PNG déjà détouré
+        elif self.matting_available():
+            image.save(source)
+            return source, "u2net"  # détourage neuronal dans le processus du moteur
+        else:
+            seg = refs_mod.segment(image)
+            if not seg.ok:
+                raise InvalidOutput(
+                    "Détourage impossible : " + " ".join(seg.warnings) + " Le détourage neuronal (U²-Net) "
+                    "n'est pas installé : relancez « Moteurs → TripoSR → Installer… » (étape de détourage, "
+                    "environ 190 Mo) ou fournissez un PNG détouré."
+                )
+            image.putalpha(Image.fromarray(seg.mask.astype(np.uint8) * 255))
+            method = "fond uni"
+        image.save(source)
+        return source, method
+
     def choose_reference(self, request: GenerationRequest):  # type: ignore[no-untyped-def]
         pool = [r for r in request.references if r.view in VIEW_PRIORITY]
         if not pool:
@@ -230,17 +272,7 @@ class TripoSREngine(EngineAdapter):
         out_dir = Path(request.output_dir)
         out_dir.mkdir(parents=True, exist_ok=True)
         ctx.progress(0.01, "Préparation de l'image (détourage)")
-        image = Image.open(ref.path).convert("RGBA")
-        if ref.mask_path and Path(ref.mask_path).is_file():
-            mask = Image.open(ref.mask_path).convert("L").resize(image.size)
-        else:
-            seg = refs_mod.segment(image)
-            if not seg.ok:
-                raise InvalidOutput("Détourage impossible : " + " ".join(seg.warnings))
-            mask = Image.fromarray(seg.mask.astype(np.uint8) * 255)
-        image.putalpha(mask)
-        source = out_dir / "triposr_input.png"
-        image.save(source)
+        source, matting = self.prepare_input(ref, out_dir)
         target = out_dir / "triposr.glb"
         command = [
             str(self.python),
@@ -254,6 +286,8 @@ class TripoSREngine(EngineAdapter):
             "--chunk-size", str(int(params.get("chunk_size", 8192))),
             "--device", str(params.get("device", "cuda")),
         ]  # fmt: skip
+        if matting == "u2net":
+            command += ["--u2net", str(self.matting_model)]
         log.info("TripoSR : lancement (%s, résolution %s)", params.get("device"), params.get("mc_resolution"))
         stderr_path = out_dir / "triposr_stderr.log"
         started = time.monotonic()
@@ -318,10 +352,11 @@ class TripoSREngine(EngineAdapter):
         return EngineOutput(
             {"model": target, "input": source},
             "glb",
-            data={"stats": stats, "reference": ref.view, "params": params},
+            data={"stats": stats, "reference": ref.view, "params": params, "matting": matting},
             used_views=[ref.view],
             warnings=[
                 f"TripoSR n'exploite qu'une image ({refs_mod.VIEWS.get(ref.view, ref.view)}) : "
-                "les faces cachées sont estimées par le modèle."
+                "les faces cachées sont estimées par le modèle.",
+                f"Détourage : {MATTING_LABELS.get(matting, matting)}.",
             ],
         )
