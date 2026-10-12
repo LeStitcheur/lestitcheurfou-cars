@@ -5,6 +5,68 @@ versionnement [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+## [0.8.0] - 2026-10-12
+
+Lore Friendly Engine : transformer un véhicule de référence en création originale cohérente avec
+l'univers de GTA V, dans le design Dark Premium.
+
+### Modifié
+
+- L'entrée « Lore Friendly » ouvre **Lore Friendly Studio** (page dédiée) ; l'onglet Lore Friendly
+  d'AI Vehicle Creator y renvoie.
+- Matériaux : émission (couleur, intensité) prévisualisée dans le viewport, enregistrée dans la
+  colonne `extra` existante (schéma `.lsfc` inchangé, v6).
+- Viewport : racines affichées même masquées, maillages translucides et découpe GL pour la
+  comparaison (sans effet sur les autres studios).
+- Adaptateurs IA : capacités explicites « plan de transformation » (Claude) et « image
+  conceptuelle 2D » (ComfyUI, workflow dédié).
+- Test de démarrage (`--smoke-test`) : vérifie aussi le Lore Friendly Engine (code de sortie 9) ;
+  la CI l'exécute sous Python 3.12.
+
+### Ajouté (fonctionnel, testé)
+
+- **Lore Friendly Studio** : gauche (source, marques, styles, presets), centre (viewport 3D,
+  comparaison), droite (analyse, transformation, propositions, propriétés), bas (historique,
+  progression, diagnostics, validation, provenance) ; modes simplifié et avancé.
+- **Variantes non destructives** : source verrouillée et jamais modifiée, copies dans un ensemble
+  de variantes, pièces remplacées masquées (pas supprimées), points de restauration, annuler /
+  rétablir, équipements Emergency Studio et livrées conservés.
+- **Vehicle Design Analyzer** : composants identifiés (métadonnées, nom, position), mesures
+  vérifiées (dimensions, empattement, voies, porte-à-faux, capot, ligne de toit, volume, garde au
+  sol), reconnaissances, hypothèses IA et inconnues distinguées ; rapport éditable.
+- **Fictional Brand Library** : 20 marques de l'univers GTA V comme références créatives (aucun
+  logo ni fichier), marques originales vérifiées (aucune marque réelle), bibliothèque utilisateur.
+- **Design DNA Engine** : 10 paramètres, profils Sport Premium, Offroad, Utility, Grand luxe,
+  Rétro, Muscle, Compacte urbaine, Supercar ; profils personnalisés.
+- **Lore Concept Generator** : plans par niveau (léger, équilibré, original) et contraintes,
+  aperçus rendus de la géométrie transformée (calcul en arrière-plan), plans cloud validés contre
+  le catalogue.
+- **Front / Rear / Body Silhouette Studio et identité lumineuse** : 34 opérations réelles —
+  déformations lisses du maillage (porte-à-faux, pavillon, capot, ailes, épaules, garde au sol,
+  assiette, boucliers, ducktail, effilements, voies), pièces paramétriques originales (calandres,
+  optiques, boucliers, prises d'air, lame, diffuseur, échappements, aileron, bas de caisse,
+  extensions d'ailes, protections, joncs, signatures lumineuses) et matériaux émissifs ; impacts
+  (UV, collisions, LOD, os) vérifiés avant confirmation ; presets de transformation.
+- **Design Comparison Studio** : côte à côte (caméras synchronisées), séparateur interactif,
+  superposition avec opacité, filaire, matériaux, deux variantes, isolation d'un composant ;
+  mesures réelles (dimensions, recouvrement des silhouettes, composants déformés) et affichage des
+  sommets déplacés.
+- **Design Originality Review** : huit aspects, mesures techniques et pistes ; aucun pourcentage
+  de légalité ni certification ; vérifications confirmées par l'utilisateur.
+- **Asset Provenance Registry** : fichiers, ressources FiveM, générations IA, références, pièces
+  Lore, marques ; saisie de l'auteur, de la source, de la licence et des restrictions ; licence
+  jamais inventée ; mentions obligatoires non supprimables.
+- Rapport de préparation au pipeline FiveM (indicatif, aucune compatibilité garantie).
+- Véhicule d'essai original `samples/vehicule_lore.glb` (`scripts/generate_lore_sample.py`).
+
+### Limites connues
+
+- Déformations sur les sommets existants (pas de remaillage) ; carrosserie d'un seul tenant
+  déformée par zones.
+- Pièces ajoutées paramétriques, hors hiérarchie d'os GTA V ; collisions et LOD non régénérés.
+- Aucune détection automatique de logos ; aucune évaluation de la ressemblance perçue.
+- Plans Claude et images ComfyUI testés contre des serveurs simulés uniquement.
+
 ## [0.7.0] - 2026-10-12
 
 AI Vehicle Creator : création 3D assistée, hybride locale / cloud, dans le design Dark Premium.

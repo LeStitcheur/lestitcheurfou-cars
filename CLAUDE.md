@@ -66,6 +66,25 @@ Ne pas utiliser `NoButtons` sur les QDoubleSpinBox (valeur invisible avec la feu
   sans Blender). Ne jamais promettre la jouabilité FiveM d'un véhicule modifié.
 - Détails : `docs/VEHICLE_EDITOR.md`.
 
+## Lore Friendly Engine (v0.8)
+
+- `lorefriendly/` (sans Qt) : `brands.py` (marques GTA V = références créatives sans logo, marques
+  originales), `dna.py` (Design DNA), `components.py` (repère du véhicule, composants par
+  métadonnée / nom / position), `geometry.py` (`VehicleState`, champs de déformation),
+  `parts.py` (pièces paramétriques originales), `operations.py` (catalogue des studios),
+  `concepts.py` (propositions, presets), `analyzer.py`, `compare.py`, `originality.py`,
+  `provenance.py`, `preview.py`, `engine.py` (`LoreFriendlyEngine`, document `lore`). Interface :
+  `ui/lore/` (page, panneaux, comparateur).
+- La source est verrouillée et **jamais modifiée** : transformations sur des variantes (ensemble
+  `variant_set` de type `lore`) ; pièce remplacée = masquée ; tout passe par l'historique.
+- `VehicleState` sert à la fois à l'aperçu (aucune écriture) et à l'application (différences →
+  commandes) : une modification présentée comme appliquée change réellement le projet.
+- Documents `lore` et `provenance` (format 1) ; schéma `.lsfc` inchangé (v6) ; matériaux
+  émissifs dans la colonne `extra`.
+- Jamais de pourcentage de légalité, de certification ou de promesse de compatibilité FiveM ;
+  jamais de licence inventée ; une image conceptuelle n'est jamais présentée comme un modèle 3D.
+- Détails : `docs/LORE_FRIENDLY_ENGINE.md`.
+
 ## AI Vehicle Creator (v0.7)
 
 - `ai/` (sans Qt) : `manager.py` (registre, configuration, routage, `JobQueue`, cache),

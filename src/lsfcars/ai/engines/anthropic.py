@@ -69,6 +69,15 @@ objets (niveaux "light", "balanced", "original"), chacun avec :
 carrosserie), "details" (liste de détails distinctifs à modifier), "direction" (direction artistique).
 N'utilise aucune marque, aucun logo ni nom de modèle réel."""
 
+DESIGN_PROMPT = """Tu aides à transformer un véhicule de référence en un véhicule ORIGINAL cohérent avec
+l'univers satirique de GTA V. Analyse mesurée du véhicule : {summary}
+Tu ne modifies rien toi-même : tu proposes des opérations choisies UNIQUEMENT dans ce catalogue
+(clé, paramètres et bornes) : {catalogue}
+Réponds UNIQUEMENT par un objet JSON valide, en français, avec la clé "proposals" : une liste de
+{count} objets avec "title" (nom fictif, aucune marque ni modèle réel), "summary" (texte court),
+"plan" (liste d'objets {{"op": clé du catalogue, "params": {{...}}, "why": "raison"}}).
+N'invente aucune opération hors catalogue."""
+
 
 def _image_block(path: Path, max_side: int = 1568) -> dict:
     image = Image.open(path).convert("RGB")
@@ -100,7 +109,7 @@ class AnthropicEngine(EngineAdapter):
         version=f"Messages API {API_VERSION}",
         kind="cloud",
         method="neural",
-        capabilities=frozenset({Capability.VISION, Capability.LORE_TEXT}),
+        capabilities=frozenset({Capability.VISION, Capability.LORE_TEXT, Capability.DESIGN_PLAN}),
         input_formats=("PNG", "JPG", "WEBP"),
         output_formats=("JSON",),
         resources="Service distant",
@@ -166,9 +175,15 @@ class AnthropicEngine(EngineAdapter):
             from lsfcars.ai.vision import VEHICLE_TYPES
 
             prompt = VISION_PROMPT.format(views=views, types=", ".join(VEHICLE_TYPES))
+        elif request.capability is Capability.DESIGN_PLAN:
+            prompt = DESIGN_PROMPT.format(
+                summary=request.prompt or "non fourni",
+                catalogue=request.params.get("catalogue", "[]"),
+                count=int(request.params.get("count", 3)),
+            )
         else:
             prompt = LORE_PROMPT.format(summary=request.prompt or "non fourni")
-        ctx.progress(0.1, f"Envoi de {len(refs)} image(s) à Anthropic")
+        ctx.progress(0.1, f"Envoi à Anthropic ({len(refs)} image(s))")
         content = [_image_block(r.path) for r in refs] + [{"type": "text", "text": prompt}]
         body = {
             "model": self.model,

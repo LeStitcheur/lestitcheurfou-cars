@@ -28,6 +28,8 @@ class Capability(StrEnum):
     PBR = "pbr"  # cartes PBR (normal, roughness, metallic…)
     SEGMENTATION = "segmentation"  # détourage
     MESH_OPS = "mesh_ops"  # remaillage, décimation
+    DESIGN_PLAN = "design_plan"  # plan de transformation (opérations du catalogue Lore Friendly)
+    CONCEPT_IMAGE = "concept_image"  # image conceptuelle 2D (jamais un maillage)
 
     @property
     def label(self) -> str:
@@ -40,6 +42,8 @@ class Capability(StrEnum):
             "pbr": "Cartes PBR",
             "segmentation": "Détourage",
             "mesh_ops": "Opérations de maillage",
+            "design_plan": "Plan de transformation (catalogue)",
+            "concept_image": "Image conceptuelle 2D",
         }[self.value]
 
 

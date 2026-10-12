@@ -147,9 +147,11 @@ def test_engine_failure_is_recorded(ai_window, qtbot):
 
 def test_lore_navigation_and_engines_dialog(ai_window, qtbot):
     window = ai_window
-    window.navigate("lore")
-    assert window.current_page() == "lore" and window.stack.currentWidget() is window.ai
-    assert window.ai.left.currentIndex() == 2  # onglet Lore Friendly
+    window.navigate("lore")  # v0.8 : Lore Friendly Studio (page dédiée)
+    assert window.current_page() == "lore" and window.stack.currentWidget() is window.lore_studio
+    window.navigate("ai")
+    window.ai.lore_requested.emit()  # lien depuis l'onglet Lore Friendly d'AI Vehicle Creator
+    assert window.current_page() == "lore"
     dialog = window.ai.open_engines()
     assert dialog.tabs.count() == 1 + len(window.ai.manager.adapters)
     dialog.close()

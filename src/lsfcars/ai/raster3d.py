@@ -39,6 +39,15 @@ def camera_basis(view: str) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     return right, true_up, look
 
 
+def screen_fit(points: np.ndarray, view: str) -> tuple[np.ndarray, float]:
+    """Centre et étendue écran (orthographique) d'un nuage de points pour une vue."""
+    right, up, _ = camera_basis(view)
+    pts = np.asarray(points, float).reshape(-1, 3)
+    screen = np.stack([pts @ right, pts @ up], axis=-1)
+    lo, hi = screen.min(axis=0), screen.max(axis=0)
+    return (lo + hi) / 2, float((hi - lo).max()) or 1.0
+
+
 def render(
     meshes: list[RenderMesh],
     view: str = "three_quarter",
@@ -46,8 +55,12 @@ def render(
     background: tuple[int, int, int] = (226, 229, 234),
     margin: float = 0.08,
     transparent: bool = False,
+    fit: tuple[np.ndarray, float] | None = None,
 ) -> Image.Image:
-    """Projection orthographique, tampon de profondeur, éclairage Lambert + ambiant."""
+    """Projection orthographique, tampon de profondeur, éclairage Lambert + ambiant.
+
+    ``fit`` (centre écran, étendue) impose un cadrage commun (comparaison de deux véhicules).
+    """
     right, up, look = camera_basis(view)
     tris = [m.positions[m.indices.astype(np.int64)] for m in meshes if len(m.indices)]
     if not tris:
@@ -55,11 +68,10 @@ def render(
     all_tri = np.concatenate(tris)
     colors = np.concatenate([m.face_colors for m in meshes if len(m.indices)])
     screen = np.stack([all_tri @ right, all_tri @ up, all_tri @ look], axis=-1)  # (M, 3, 3)
-    lo = screen[..., :2].reshape(-1, 2).min(axis=0)
-    hi = screen[..., :2].reshape(-1, 2).max(axis=0)
-    extent = float((hi - lo).max()) or 1.0
+    if fit is None:
+        fit = screen_fit(all_tri.reshape(-1, 3), view)
+    center, extent = np.asarray(fit[0], float), float(fit[1]) or 1.0
     scale = size * (1 - 2 * margin) / extent
-    center = (lo + hi) / 2
     px = (screen[..., 0] - center[0]) * scale + size / 2
     py = size / 2 - (screen[..., 1] - center[1]) * scale
     depth = screen[..., 2]

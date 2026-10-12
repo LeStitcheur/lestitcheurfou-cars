@@ -1,4 +1,31 @@
-# Guide utilisateur — LeStitcheurFou Cars 0.7.0
+# Guide utilisateur — LeStitcheurFou Cars 0.8.0
+
+## Nouveautés 0.8 : Lore Friendly Engine
+
+Référence complète : [LORE_FRIENDLY_ENGINE.md](LORE_FRIENDLY_ENGINE.md).
+
+1. Importez un véhicule (Fichier → Importer, ou bouton « Importer… » du studio). Essai rapide :
+   `samples/vehicule_lore.glb`.
+2. **Lore Friendly** (barre latérale) → onglet **Source** : choisissez le véhicule puis **Créer un
+   design**. La source est verrouillée : elle ne sera jamais modifiée.
+3. Onglet **Analyse** → **Analyser** : chaque information indique si elle est mesurée, reconnue,
+   issue d'une IA ou inconnue. Double-clic pour corriger.
+4. **Marques** : choisissez une marque de l'univers GTA V (référence créative, aucun logo fourni)
+   ou créez une marque originale. **Styles** : profil Design DNA et réglages. **Presets** :
+   niveau (léger, équilibré, original) et contraintes à conserver.
+5. **Propositions** → **Générer** : plusieurs plans avec leurs aperçus rendus. **Appliquer** :
+   une variante est créée après confirmation (impacts listés), en une étape annulable.
+6. **Transformation** : Front Design Studio, Rear Design Studio, Body Silhouette Studio,
+   identité lumineuse — **Prévisualiser** (avant / après) puis **Appliquer**.
+7. **Comparaison** (en haut) : côte à côte, séparateur, superposition, filaire, matériaux ;
+   **Mesurer les différences**. **Revenir à l'original** à tout moment.
+8. Bas de l'écran : **Validation** (workflow, revue d'originalité, vérifications par vous,
+   rapport de préparation FiveM), **Provenance** (licences à compléter), **Historique**.
+9. Enregistrez (Ctrl+S) ; **Vehicle Editor**, **Livery** ou **Emergency** pour poursuivre.
+
+La revue d'originalité donne des mesures techniques : ce n'est ni un avis juridique ni une
+certification, et un véhicule transformé doit être exporté et essayé en jeu avant toute
+utilisation FiveM.
 
 ## Nouveautés 0.7 : AI Vehicle Creator
 

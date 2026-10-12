@@ -24,6 +24,7 @@ EXIT_SMOKE_EDITOR_FAILED = 5
 EXIT_SMOKE_EMERGENCY_FAILED = 6
 EXIT_SMOKE_LIVERY_FAILED = 7
 EXIT_SMOKE_AI_FAILED = 8
+EXIT_SMOKE_LORE_FAILED = 9
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
@@ -111,7 +112,8 @@ def _run_smoke_test(app: QApplication, window: MainWindow, delay_ms: int) -> int
     ``EXIT_SMOKE_EDITOR_FAILED`` si le Vehicle Editor (édition, bibliothèque, sauvegarde) échoue,
     ``EXIT_SMOKE_EMERGENCY_FAILED`` si l'Emergency Studio (variante, équipements, motif) échoue,
     ``EXIT_SMOKE_LIVERY_FAILED`` si le Livery Studio (peinture 3D, calques, export) échoue,
-    ``EXIT_SMOKE_AI_FAILED`` si AI Vehicle Creator (analyse, génération locale, textures) échoue.
+    ``EXIT_SMOKE_AI_FAILED`` si AI Vehicle Creator (analyse, génération locale, textures) échoue,
+    ``EXIT_SMOKE_LORE_FAILED`` si le Lore Friendly Engine (analyse, propositions, variante) échoue.
     Le rendu inclut les superpositions du mode Édition et d'un point d'ancrage.
     """
     import tempfile
@@ -131,6 +133,7 @@ def _run_smoke_test(app: QApplication, window: MainWindow, delay_ms: int) -> int
     emergency_ok = _smoke_emergency(log)
     livery_ok = _smoke_livery(log)
     ai_ok = _smoke_ai(log)
+    lore_ok = _smoke_lore(log)
 
     def finish() -> None:
         image = viewport.grabFramebuffer()
@@ -154,8 +157,10 @@ def _run_smoke_test(app: QApplication, window: MainWindow, delay_ms: int) -> int
             result["code"] = EXIT_SMOKE_EMERGENCY_FAILED
         elif not livery_ok:
             result["code"] = EXIT_SMOKE_LIVERY_FAILED
+        elif not ai_ok:
+            result["code"] = EXIT_SMOKE_AI_FAILED
         else:
-            result["code"] = 0 if ai_ok else EXIT_SMOKE_AI_FAILED
+            result["code"] = 0 if lore_ok else EXIT_SMOKE_LORE_FAILED
         session.stack.mark_clean()
         window.close()
         app.quit()
@@ -361,6 +366,57 @@ def _smoke_ai(log) -> bool:  # type: ignore[no-untyped-def]
         return ok
     except Exception:  # noqa: BLE001 (un échec du test doit se traduire par un code de retour)
         log.exception("Test de démarrage : AI Vehicle Creator en échec")
+        return False
+
+
+def _smoke_lore(log) -> bool:  # type: ignore[no-untyped-def]
+    """Lore Friendly Engine : analyse, propositions, aperçus, variante transformée, source intacte."""
+    import tempfile
+    from pathlib import Path
+
+    import numpy as np
+
+    from lsfcars.ai.engines.base import JobContext
+    from lsfcars.lorefriendly.engine import SOURCE, LoreFriendlyEngine
+    from lsfcars.project.session import ProjectSession
+
+    try:
+        folder = Path(tempfile.mkdtemp(prefix="lsfcars-smoke-lore-"))
+        session = ProjectSession.create(folder, "Lore")
+        root = session.import_model(samples_dir() / "vehicule_lore.glb")
+        source = {
+            n.id: session.geometry_for(n).positions.copy() for n in session.scene.subtree(root) if n.mesh_key
+        }
+        engine = LoreFriendlyEngine(session, None, folder / "data")
+        design = engine.create_design(root)
+        report = engine.analyze(design)
+        engine.choose_brand(design, "pegassi")
+        proposals = engine.generate_concepts(design, 2)
+        engine.apply_previews(design, engine.preview_job(design)(JobContext()))
+        variant = engine.apply_concept(design, proposals[0]["id"])
+        comparison = engine.compare(design, SOURCE, variant)
+        session.save()
+        reopened = LoreFriendlyEngine(ProjectSession.open(session.file_path), None, folder / "data")
+        intact = all(
+            np.array_equal(source[k], session.geometry_for(session.scene.nodes[k]).positions) for k in source
+        )
+        ok = (
+            intact
+            and len(report["entries"]) > 20
+            and comparison["deformed"] > 0
+            and len(reopened.design()["variants"]) == 1
+        )
+        log.info(
+            "Test de démarrage : Lore Friendly Engine %s (%d opérations, silhouette de profil %.3f, "
+            "source intacte : %s)",
+            "OK" if ok else "ÉCHEC",
+            len(proposals[0]["plan"]),
+            comparison["silhouettes"]["left"],
+            "oui" if intact else "NON",
+        )
+        return ok
+    except Exception:  # noqa: BLE001 (un échec du test doit se traduire par un code de retour)
+        log.exception("Test de démarrage : Lore Friendly Engine en échec")
         return False
 
 

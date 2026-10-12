@@ -48,6 +48,7 @@ datas = [
     (str(ROOT / "samples" / "vehicule_test.glb"), "samples"),
     (str(ROOT / "samples" / "vehicule_test.obj"), "samples"),
     (str(ROOT / "samples" / "vehicule_livree.glb"), "samples"),
+    (str(ROOT / "samples" / "vehicule_lore.glb"), "samples"),
     (str(ROOT / "samples" / "fivem"), "samples/fivem"),
     (str(ROOT / "samples" / "references"), "samples/references"),
     (str(ROOT / "src" / "lsfcars" / "ai" / "workers"), "lsfcars/ai/workers"),  # lancé par le Python du moteur

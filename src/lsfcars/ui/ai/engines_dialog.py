@@ -200,16 +200,28 @@ class EnginesDialog(QDialog):
                 lambda: self.manager.configure_engine("comfyui", {"workflow": workflow.text().strip()})
             )
             form.addRow("Workflow", workflow)
+            concept = LSInput("Workflow d'image conceptuelle 2D (facultatif, Lore Friendly Studio)")
+            concept.setText(stored.get("concept_workflow", ""))
+            concept.editingFinished.connect(
+                lambda: self.manager.configure_engine("comfyui", {"concept_workflow": concept.text().strip()})
+            )
+            form.addRow("Image 2D", concept)
             settings.body.addLayout(form)
             settings.row(
-                button("Choisir le workflow…", "folder-open", lambda: self.choose_workflow(workflow))
+                button("Choisir le workflow…", "folder-open", lambda: self.choose_workflow(workflow)),
+                button(
+                    "Workflow image 2D…",
+                    "folder-open",
+                    lambda: self.choose_workflow(concept, "concept_workflow"),
+                ),
             )
             settings.body.addWidget(
                 selectable(
                     "Exportez votre workflow avec « Save (API) ». Il doit contenir un nœud LoadImage et "
-                    "produire un maillage (GLB, glTF, OBJ ou PLY). Les nœuds et modèles restent ceux que "
-                    "vous installez dans "
-                    "ComfyUI, sous leurs licences."
+                    "produire un maillage (GLB, glTF, OBJ ou PLY). Le workflow d'image 2D (facultatif) "
+                    "reçoit l'aperçu d'une proposition Lore Friendly et produit une image : jamais un "
+                    "modèle 3D. Les nœuds et modèles restent ceux que vous installez dans ComfyUI, sous "
+                    "leurs licences."
                 )
             )
         elif engine_id in KEY_PROVIDERS:
@@ -264,11 +276,11 @@ class EnginesDialog(QDialog):
             widget.setText(f"{availability.status.label} — {availability.message}")
         self.page.after_detection()
 
-    def choose_workflow(self, field: LSInput) -> None:
+    def choose_workflow(self, field: LSInput, key: str = "workflow") -> None:
         path, _ = QFileDialog.getOpenFileName(self, "Workflow ComfyUI (format API)", "", "JSON (*.json)")
         if path:
             field.setText(path)
-            self.manager.configure_engine("comfyui", {"workflow": path})
+            self.manager.configure_engine("comfyui", {key: path})
 
     def save_key(self, provider: str) -> None:
         field = self.key_inputs[provider]

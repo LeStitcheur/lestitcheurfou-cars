@@ -573,6 +573,14 @@ class LorePanel(Page):
             ),
         )
         intro.body.addWidget(wrap_label(lore.DISCLAIMER, "faint"))
+        intro.row(
+            button(
+                "Ouvrir Lore Friendly Studio",
+                "scroll-text",
+                self.page.lore_requested.emit,
+                "Transformations réelles du modèle : marques, Design DNA, studios, comparaison, provenance",
+            )
+        )
         logos = self.section(
             "Logos réels", "Aucune reconnaissance automatique locale : marquez-les par annotation."
         )

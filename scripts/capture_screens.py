@@ -397,7 +397,69 @@ def screens(width: int, height: int, scale: str) -> None:
         page.v_split.setSizes([620, 330])
         page.refresh()
         page.history.list.setCurrentRow(0)
-        QTimer.singleShot(500, lambda: (grab("ai_moteurs"), finish()))
+        QTimer.singleShot(500, lambda: (grab("ai_moteurs"), step_lore()))
+
+    def step_lore() -> None:
+        from lsfcars.ai.engines.base import JobContext
+
+        session = window.controller.session
+        root = session.import_model(ROOT / "samples" / "vehicule_lore.glb")
+        for other in [n.id for n in session.scene.roots() if n.id != root]:
+            session.set_visible([other], False)
+        window.navigate("lore")
+        page = window.lore_studio
+        engine = page.engine
+        design = engine.create_design(root, "Pegassi · étude Lore Friendly")
+        engine.analyze(design)
+        engine.choose_brand(design, "pegassi")
+        engine.apply_dna_profile(design, "supercar")
+        engine.update_design(design, level="original")
+        proposals = engine.generate_concepts(design, 3)
+        engine.apply_previews(design, engine.preview_job(design)(JobContext()))
+        variant = engine.apply_concept(design, proposals[1]["id"])
+        engine.apply_operation(design, variant, "headlights", {"style": "boomerang", "width": 0.36})
+        engine.apply_operation(design, variant, "signature", {"style": "split"})
+        engine.review(design, variant)
+        session.selection.clear()
+        page.left.setCurrentIndex(1)
+        page.right.setCurrentIndex(2)
+        page.bottom.setCurrentWidget(page.validation)
+        page.v_split.setSizes([700, 250])
+        page.refresh()
+        page.brands.select("pegassi")
+        page.proposals.list.setCurrentRow(1)
+        page.viewport.camera.set_view(-38, 16)
+        page.frame_model()
+        QTimer.singleShot(700, step_lore_compare)
+
+    def step_lore_compare() -> None:
+        grab("lore_studio")
+        page = window.lore_studio
+        page.set_view("compare")
+        page.comparison.mode.select_data("split")
+        page.comparison.apply()
+        page.comparison.measure()
+        page.comparison.view_single.camera.set_view(-25, 10)
+        QTimer.singleShot(250, page.comparison.frame)  # cadrage une fois le viewport dimensionné
+        page.right.setCurrentIndex(1)
+        page.transform.select("roof_height")
+        page.left.setCurrentIndex(2)
+        page.bottom.setCurrentWidget(page.history)
+        page.refresh()
+        QTimer.singleShot(900, step_lore_analysis)
+
+    def step_lore_analysis() -> None:
+        grab("lore_comparaison")
+        page = window.lore_studio
+        page.set_view("3d")
+        page.show("source")
+        page.left.setCurrentIndex(0)
+        page.right.setCurrentIndex(0)
+        page.bottom.setCurrentWidget(page.provenance_panel)
+        page.refresh()
+        page.viewport.camera.set_view(-140, 12)
+        page.frame_model()
+        QTimer.singleShot(700, lambda: (grab("lore_analyse"), finish()))
 
     def finish() -> None:
         session = window.controller.session

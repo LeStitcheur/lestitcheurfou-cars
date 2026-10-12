@@ -123,6 +123,32 @@ Principe : le document de livrée est un JSON (`documents["livery"]`) ; les pixe
 `ImageBuffer` de `SceneGraph.images`. La composition est publiée dans `session.live_textures`
 et envoyée au GPU par région modifiée : tous les viewports affichent la livrée.
 
+### Ajouts v0.8 (Lore Friendly Engine)
+
+```
+src/lsfcars/
+├── lorefriendly/           logique sans Qt
+│   ├── brands.py           Fictional Brand Library (GTA V : références créatives ; marques originales)
+│   ├── dna.py              Design DNA Engine (10 paramètres, profils)
+│   ├── components.py       repère du véhicule, composants (métadonnée, nom, position), roues
+│   ├── geometry.py         VehicleState (copie de travail), champs de déformation lisses
+│   ├── parts.py            pièces paramétriques originales (optiques, calandres, échappements…)
+│   ├── operations.py       catalogue Front / Rear / Body Silhouette / identité lumineuse
+│   ├── concepts.py         Lore Concept Generator, presets, validation des plans cloud
+│   ├── analyzer.py         Vehicle Design Analyzer (statut de chaque information)
+│   ├── compare.py          différences géométriques, silhouettes
+│   ├── originality.py      Design Originality Review
+│   ├── provenance.py       Asset Provenance Registry (document « provenance »)
+│   ├── preview.py          aperçus logiciels (fil secondaire)
+│   └── engine.py           LoreFriendlyEngine : designs, variantes, application, document « lore »
+└── ui/lore/                page, panneaux, Design Comparison Studio
+```
+
+Principe : une opération transforme un `VehicleState` ; pour l'aperçu, l'état est rendu sans
+rien écrire ; pour l'application, ses différences deviennent des commandes (`SetGeometry`,
+`SetTransforms`, `InsertNodes`, `SetNodeField`, matériaux) regroupées avec le `SetDocument` du
+document `lore` dans une `CompositeCommand` annulable.
+
 ### Ajouts v0.7 (AI Vehicle Creator)
 
 ```
@@ -168,7 +194,7 @@ et ne modifie jamais le fichier.
 | `nodes` | hiérarchie : parent, rang, nom, type, transformation (JSON), visibilité, verrou, asset, maillage, matériau, `extra` (JSON, format 3 : métadonnées d'origine GTA V) |
 | `resources` | format 3 : ressources FiveM importées — nom, source, type de source, statut, date, `manifest` (JSON versionné) |
 | `meshes` | format 4 : géométrie locale (clé, nom, npz compressé : positions, indices, normales, couleurs, UV) |
-| `documents` | format 5 : documents de studio (clé, JSON), ex. `emergency`, `livery`, `ai` (v0.7) |
+| `documents` | format 5 : documents de studio (clé, JSON), ex. `emergency`, `livery`, `ai` (v0.7), `lore` et `provenance` (v0.8) |
 | `images` | format 6 : calques raster et masques (clé, largeur, hauteur, canaux, PNG) |
 | `blobs` | format 6 : logos, polices, images de référence et miniatures IA (clé = empreinte, octets) |
 | `thumbnail` | miniature PNG |

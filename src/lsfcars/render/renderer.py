@@ -41,6 +41,7 @@ GL_LEQUAL, GL_LESS = 0x0203, 0x0201
 GL_DEPTH_BUFFER_BIT, GL_COLOR_BUFFER_BIT = 0x0100, 0x4000
 GL_VENDOR, GL_RENDERER, GL_VERSION, GL_SHADING_LANGUAGE_VERSION = 0x1F00, 0x1F01, 0x1F02, 0x8B8C
 GL_FALSE, GL_TRUE = 0, 1
+GL_SCISSOR_TEST = 0x0C11
 
 MIN_GL_VERSION = (3, 0)
 ATTR_POSITION, ATTR_NORMAL, ATTR_COLOR, ATTR_UV = 0, 1, 2, 3
@@ -66,6 +67,7 @@ uniform vec4 uBaseColor; uniform float uRough; uniform float uMetal; uniform flo
 uniform float uUseTexture; uniform sampler2D uTex; uniform float uMode; uniform float uHighlight;
 uniform float uTexMode;
 uniform float uUseNormal; uniform sampler2D uNormalTex; uniform float uNormalStrength; uniform vec3 uAccent;
+uniform vec3 uEmissive;
 out vec4 fragColor;
 vec3 perturb(vec3 n, vec3 p, vec2 uv) {  // repère tangent par dérivées écran (sans tangentes stockées)
     vec3 dp1 = dFdx(p); vec3 dp2 = dFdy(p); vec2 duv1 = dFdx(uv); vec2 duv2 = dFdy(uv);
@@ -114,6 +116,7 @@ void main() {
     float rim = pow(1.0 - max(dot(n, v), 0.0), 3.0);
     color += vec3(0.04, 0.09, 0.16) * rim;  // liseré froid du studio (bleu)
     color = mix(color, color * 0.75 + uAccent * (0.18 + 0.75 * rim), uHighlight * 0.55);
+    if (uMode > 0.5) color += uEmissive;  // émission (optiques, signatures lumineuses)
     fragColor = vec4(color, alpha);
 }
 """
@@ -198,6 +201,10 @@ class DrawItem:
     uv_scale: tuple[float, float] = (1.0, 1.0)
     uv_offset: tuple[float, float] = (0.0, 0.0)
     live_texture: object | None = None  # texture composée en direct (Livery Studio)
+    emissive: tuple[float, float, float] = (0.0, 0.0, 0.0)  # couleur × intensité
+    scissor: tuple[float, float] | None = (
+        None  # bande horizontale affichée (fractions de largeur) : comparaison
+    )
 
 
 @dataclass
@@ -581,24 +588,29 @@ class Renderer:
             prog.setUniformValue1i("uTex", 0)
             prog.setUniformValue1f("uMode", 0.0 if frame.shading == "solid" else 1.0)
             for item in opaque:
+                self._clip(item, full)
                 self._draw_item(item)
             if transparent:
                 eye = np.linalg.inv(frame.view)[:3, 3]
                 transparent.sort(key=lambda i: -float(np.linalg.norm(i.model[:3, 3] - eye)))
                 fn.glDepthMask(GL_FALSE)
                 for item in transparent:
+                    self._clip(item, full)
                     self._draw_item(item)
                 fn.glDepthMask(GL_TRUE)
+            fn.glDisable(GL_SCISSOR_TEST)
             prog.release()
 
         fn.glDepthFunc(GL_LEQUAL)  # arêtes : toutes en filaire, la sélection sinon
         for item in frame.items:
             if wire_only or item.selected:
+                self._clip(item, full)
                 gpu = self._edges(item.mesh)
                 self._line_uniforms(view, proj, item.model, SELECTION_EDGE if item.selected else WIRE_COLOR)
                 gpu.edge_vao.bind()
                 fn.glDrawElements(GL_LINES, gpu.edge_count, GL_UNSIGNED_INT, shiboken6.VoidPtr(0))
                 gpu.edge_vao.release()
+        fn.glDisable(GL_SCISSOR_TEST)
         fn.glDepthFunc(GL_LESS)
 
         for overlay in frame.overlays:
@@ -607,6 +619,18 @@ class Renderer:
             self._draw_gizmo(frame.gizmo, view, proj)
         self._draw_axis_indicator(frame, full)
         self.last_frame_ms = (time.perf_counter() - start) * 1000.0
+
+    def _clip(self, item: DrawItem, full: tuple[int, int, int, int]) -> None:
+        """Limite le dessin d'un élément à une bande verticale (séparateur de comparaison)."""
+        fn = self._fn
+        if item.scissor is None:
+            fn.glDisable(GL_SCISSOR_TEST)
+            return
+        width, height = full[2], full[3]
+        x0 = int(round(max(0.0, min(1.0, item.scissor[0])) * width))
+        x1 = int(round(max(0.0, min(1.0, item.scissor[1])) * width))
+        fn.glEnable(GL_SCISSOR_TEST)
+        fn.glScissor(x0, 0, max(x1 - x0, 0), height)
 
     def _draw_overlay(self, overlay: Overlay, view: QMatrix4x4, proj: QMatrix4x4) -> None:
         """Superposition dynamique : tampons créés pour l'image puis libérés."""
@@ -678,6 +702,7 @@ class Renderer:
         prog.setUniformValue1f("uAlpha", float(item.opacity))
         prog.setUniformValue1f("uHighlight", 1.0 if item.selected else 0.0)
         prog.setUniformValue("uAccent", *ACCENT_COLOR)
+        prog.setUniformValue("uEmissive", *(float(c) for c in item.emissive))
         prog.setUniformValue("uUVScale", float(item.uv_scale[0]), float(item.uv_scale[1]))
         prog.setUniformValue("uUVOffset", float(item.uv_offset[0]), float(item.uv_offset[1]))
         live = item.live_texture

@@ -92,6 +92,11 @@ class Viewport3D(QOpenGLWidget):
         # Transformations d'affichage (monde, héritées par les enfants) : aperçu de rotation des roues
         self.display_matrices: dict[str, np.ndarray] = {}
         self.hidden: set[str] = set()  # masquage temporaire (habitacle : carrosserie masquée)
+        # Comparaison (Lore Friendly) : racines affichées même masquées, maillages « fantômes »
+        self.force_visible: set[str] = set()
+        self.ghost_ids: set[str] = set()
+        self.ghost_opacity = 0.35
+        self.split: tuple[set[str], set[str], float] | None = None  # (maillages A, maillages B, position)
         self.edit_state: modes.EditState | None = None
         self.edit_preview: tuple[str, object] | None = None  # (maillage, MeshData) pendant un glisser
         self.show_anchors = True
@@ -409,7 +414,7 @@ class Viewport3D(QOpenGLWidget):
             worlds[node.id] = worlds[node.parent_id] @ node.transform.matrix()
             if node.id in self.display_matrices:
                 worlds[node.id] = self.display_matrices[node.id] @ worlds[node.id]
-            visible[node.id] = visible[node.parent_id] and node.visible
+            visible[node.id] = node.id in self.force_visible or (visible[node.parent_id] and node.visible)
             if node.kind is not NodeKind.MESH or not visible[node.id] or not self._displayed(node.id):
                 continue
             mesh = session.geometry_for(node)
@@ -435,7 +440,19 @@ class Viewport3D(QOpenGLWidget):
                     path = session.project.project_dir / material.normal_texture
                     item.normal_texture = path if path.is_file() else None
                 item.normal_strength = material.normal_strength
+                if material.is_emissive:
+                    item.emissive = tuple(
+                        c * min(material.emissive_strength, 2.0) * 0.6 for c in material.emissive
+                    )
                 item.uv_scale, item.uv_offset = material.uv_scale, material.uv_offset
+            if node.id in self.ghost_ids:  # superposition : véhicule de référence translucide
+                item.opacity = min(item.opacity, self.ghost_opacity)
+            if self.split is not None:  # séparateur : A à gauche, B à droite
+                left, right, position = self.split
+                if node.id in left:
+                    item.scissor = (0.0, position)
+                elif node.id in right:
+                    item.scissor = (position, 1.0)
             items.append(item)
         return items
 

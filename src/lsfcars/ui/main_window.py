@@ -37,6 +37,7 @@ from lsfcars.ui.dialogs.new_project import NewProjectDialog, NewProjectRequest
 from lsfcars.ui.emergency.page import EmergencyPage
 from lsfcars.ui.import_studio.page import VehicleImportStudio
 from lsfcars.ui.livery.page import LiveryPage
+from lsfcars.ui.lore.page import LoreFriendlyStudioPage
 from lsfcars.ui.pages.dashboard import DashboardPage
 from lsfcars.ui.pages.pages import (
     UPCOMING,
@@ -122,7 +123,8 @@ def nav_entries() -> list[NavEntry]:
             "Lore Friendly",
             "scroll-text",
             "Outils",
-            tooltip="Marques et noms fictifs, propositions d'adaptation, provenance (AI Vehicle Creator)",
+            tooltip="Lore Friendly Studio : marques fictives, Design DNA, transformations réelles, "
+            "comparaison, provenance",
         ),
         soon("configs"),
         soon("optimize"),
@@ -169,6 +171,7 @@ class MainWindow(QMainWindow):
         self.livery = LiveryPage(self.controller, self.settings)
         self.livery.emergency_page = self.emergency
         self.ai = AIVehicleCreatorPage(self.controller, self.settings)
+        self.lore_studio = LoreFriendlyStudioPage(self.controller, self.settings, self.ai.manager)
         self.materials_page = MaterialsPage(self.controller)
         self.settings_page = SettingsPage(self.settings)
         self.diagnostics_page = DiagnosticsPage()
@@ -181,6 +184,7 @@ class MainWindow(QMainWindow):
             "emergency": self.emergency,
             "liveries": self.livery,
             "ai": self.ai,
+            "lore": self.lore_studio,
             "materials": self.materials_page,
             "settings": self.settings_page,
             "diagnostics": self.diagnostics_page,
@@ -302,6 +306,11 @@ class MainWindow(QMainWindow):
         self.livery.editor_requested.connect(lambda: self.navigate("studio"))
         self.ai.editor_requested.connect(lambda: self.navigate("studio"))
         self.ai.livery_requested.connect(lambda: self.navigate("liveries"))
+        self.ai.lore_requested.connect(lambda: self.navigate("lore"))
+        self.lore_studio.editor_requested.connect(lambda: self.navigate("studio"))
+        self.lore_studio.livery_requested.connect(lambda: self.navigate("liveries"))
+        self.lore_studio.emergency_requested.connect(lambda: self.navigate("emergency"))
+        self.lore_studio.import_requested.connect(self.import_model)
         self.settings_page.settings_changed.connect(self._on_setting)
 
     # --- Navigation ---------------------------------------------------------
@@ -309,8 +318,6 @@ class MainWindow(QMainWindow):
         widget = self.stack.currentWidget()
         if getattr(self, "_library_shown", False) and widget is self.studio:
             return "library"
-        if getattr(self, "_lore_shown", False) and widget is self.ai:
-            return "lore"
         return next((k for k, p in self.pages.items() if p is widget), "dashboard")
 
     def navigate(self, key: str) -> None:
@@ -322,13 +329,6 @@ class MainWindow(QMainWindow):
             self._library_shown = True
             return
         self._library_shown = False
-        if key == "lore":  # l'assistant Lore Friendly vit dans AI Vehicle Creator (onglet de gauche)
-            self.navigate("ai")
-            self.ai.left.setCurrentIndex(2)
-            self.sidebar.set_current("lore")
-            self._lore_shown = True
-            return
-        self._lore_shown = False
         page = self.pages.get(key)
         if page is None:
             return

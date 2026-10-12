@@ -5,9 +5,11 @@
 
 Atelier Windows de création, d'adaptation et d'export de véhicules **Lore Friendly** pour **GTA V / FiveM**.
 
-> Statut : **v0.7.0 — AI Vehicle Creator : références, analyse, génération 3D locale ou cloud, corrections, textures, Lore Friendly**.
+> Statut : **v0.8.0 — Lore Friendly Engine : transformation d'un véhicule de référence en création originale (marques fictives, Design DNA, studios de transformation, comparaison, provenance)**.
 > Voir [CHANGELOG.md](CHANGELOG.md) pour ce qui fonctionne réellement aujourd'hui.
 
+![Lore Friendly Studio — marques, propositions et validation](docs/screenshots/1920x1080@1_lore_studio.png)
+![Design Comparison Studio — séparateur avant / après et mesures](docs/screenshots/1920x1080@1_lore_comparaison.png)
 ![AI Vehicle Creator — références, génération et modèle](docs/screenshots/1920x1080@1_ai_creator.png)
 ![AI Vehicle Creator — moteurs, routage et historique](docs/screenshots/1920x1080@1_ai_moteurs.png)
 ![Livery Studio — livrée LSPD peinte en 3D](docs/screenshots/1920x1080@1_livery_studio.png)
@@ -33,10 +35,20 @@ LeStitcheurFou Cars a pour objectif de permettre de :
 
 Tous les types de véhicules sont prévus : voitures, SUV, motos, camions, bateaux, hélicoptères, aéronefs.
 
-## Fonctionnalités de la v0.7.0
+## Fonctionnalités de la v0.8.0
 
 | Fonction | État |
 |---|---|
+| **Lore Friendly Studio** : source verrouillée, variantes non destructives, points de restauration, modes simplifié / avancé | ✅ |
+| Vehicle Design Analyzer : mesures vérifiées, reconnaissances, hypothèses IA et inconnues distinguées ; rapport éditable | ✅ |
+| Fictional Brand Library : 20 marques de l'univers GTA V (références créatives, aucun logo) et marques originales | ✅ |
+| Design DNA Engine : 10 paramètres, 8 profils intégrés, profils enregistrables | ✅ |
+| Lore Concept Generator : plans de transformation, aperçus rendus de la géométrie transformée | ✅ (moteur local) |
+| Front / Rear / Body Silhouette Studio, identité lumineuse : 34 opérations réelles (déformations, pièces, matériaux émissifs) | ✅ |
+| Design Comparison Studio : côte à côte, séparateur, superposition, filaire, matériaux, mesures | ✅ |
+| Design Originality Review : mesures techniques et pistes, aucune certification ni pourcentage de légalité | ✅ |
+| Asset Provenance Registry : licences jamais inventées, mentions obligatoires non supprimables | ✅ |
+| Plans de transformation par Claude, images conceptuelles 2D par ComfyUI | ⚠️ testés contre serveurs simulés seulement |
 | **AI Vehicle Creator** : Reference Studio, analyse, génération, assistant maillage, textures, Lore Friendly, historique | ✅ |
 | AI Engine Manager : interface commune des moteurs, détection matérielle, profils, Auto AI Routing, file de tâches, cache | ✅ |
 | Génération locale **LSF Silhouette** (multi-vues, algorithme déterministe, intégré) | ✅ génération réelle |
@@ -90,6 +102,7 @@ Tous les types de véhicules sont prévus : voitures, SUV, motos, camions, batea
 | Matériaux, projets, sauvegarde auto (v0.2) | ✅ |
 | Optimisation, Export FiveM complet (YFT, YTD) | 🕓 « Bientôt », non fonctionnels |
 
+Lore Friendly Engine, studios, comparaison et limites : [docs/LORE_FRIENDLY_ENGINE.md](docs/LORE_FRIENDLY_ENGINE.md).
 AI Vehicle Creator, moteurs, cloud et limites : [docs/AI_VEHICLE_CREATOR.md](docs/AI_VEHICLE_CREATOR.md).
 Livery Studio, peinture 3D et export : [docs/LIVERY_STUDIO.md](docs/LIVERY_STUDIO.md).
 Emergency Studio, adaptateurs et limites : [docs/EMERGENCY_STUDIO.md](docs/EMERGENCY_STUDIO.md).
@@ -119,6 +132,7 @@ addon de démonstration (synthétique) : `python scripts\generate_demo_addon.py`
 ## Documentation
 
 - [Guide utilisateur](docs/GUIDE_UTILISATEUR.md)
+- [Lore Friendly Engine](docs/LORE_FRIENDLY_ENGINE.md)
 - [AI Vehicle Creator](docs/AI_VEHICLE_CREATOR.md)
 - [Livery Studio](docs/LIVERY_STUDIO.md)
 - [Emergency Studio](docs/EMERGENCY_STUDIO.md)

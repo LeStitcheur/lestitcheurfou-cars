@@ -66,7 +66,7 @@ class ComfyUIEngine(EngineAdapter):
         version="API HTTP",
         kind="local",
         method="neural",
-        capabilities=frozenset({Capability.IMAGE_TO_3D, Capability.TEXTURE}),
+        capabilities=frozenset({Capability.IMAGE_TO_3D, Capability.TEXTURE, Capability.CONCEPT_IMAGE}),
         input_formats=("PNG", "JPG", "WEBP"),
         output_formats=("GLB", "glTF", "OBJ", "PLY", "PNG"),
         resources="Selon le workflow et les modèles installés dans ComfyUI (GPU recommandé)",
@@ -99,32 +99,40 @@ class ComfyUIEngine(EngineAdapter):
         if devices:
             total = devices[0].get("vram_total")
             vram = f", {devices[0].get('name', 'GPU')}" + (f" ({total / 2**30:.1f} Go)" if total else "")
-        workflow_path = self.config.get("workflow")
-        if not workflow_path:
+        configured = [
+            (role, self.config.get(key))
+            for role, key in (("3D", "workflow"), ("image conceptuelle", "concept_workflow"))
+            if self.config.get(key)
+        ]
+        if not configured:
             return Availability(
                 Status.UNCONFIGURED, f"ComfyUI {version} détecté{vram} — aucun workflow choisi.", version
             )
-        try:
-            workflow = load_workflow(workflow_path)
-            missing = self.missing_nodes(workflow)
-        except AIError as exc:
-            return Availability(Status.ERROR, str(exc), version)
-        if missing:
-            return Availability(
-                Status.ERROR, f"Nœuds absents dans ComfyUI : {', '.join(sorted(missing))}.", version
-            )
-        if not any(n["class_type"] == "LoadImage" for n in workflow.values()):
-            return Availability(Status.ERROR, "Le workflow ne contient aucun nœud LoadImage.", version)
-        return Availability(Status.AVAILABLE, f"ComfyUI {version}{vram} — workflow prêt.", version)
+        for role, workflow_path in configured:
+            try:
+                workflow = load_workflow(workflow_path)
+                missing = self.missing_nodes(workflow)
+            except AIError as exc:
+                return Availability(Status.ERROR, str(exc), version)
+            if missing:
+                return Availability(
+                    Status.ERROR, f"Nœuds absents dans ComfyUI : {', '.join(sorted(missing))}.", version
+                )
+            if not any(n["class_type"] == "LoadImage" for n in workflow.values()):
+                return Availability(Status.ERROR, f"Workflow {role} : aucun nœud LoadImage.", version)
+        roles = " et ".join(role for role, _ in configured)
+        return Availability(Status.AVAILABLE, f"ComfyUI {version}{vram} — workflow {roles} prêt.", version)
 
     def missing_nodes(self, workflow: dict) -> set[str]:
         available = set(self._get("/object_info", timeout=10.0).keys())
         return {node["class_type"] for node in workflow.values()} - available
 
     def run(self, request: GenerationRequest, ctx: JobContext) -> EngineOutput:
-        workflow_path = self.config.get("workflow")
+        concept = request.capability is Capability.CONCEPT_IMAGE
+        workflow_path = self.config.get("concept_workflow" if concept else "workflow")
         if not workflow_path:
-            raise EngineUnavailable("ComfyUI : choisissez un workflow (format API) dans les paramètres.")
+            kind = "d'image conceptuelle" if concept else "(format API)"
+            raise EngineUnavailable(f"ComfyUI : choisissez un workflow {kind} dans les paramètres.")
         workflow = copy.deepcopy(load_workflow(workflow_path))
         missing = self.missing_nodes(workflow)
         if missing:
@@ -206,7 +214,11 @@ class ComfyUIEngine(EngineAdapter):
         for item in produced:
             filename = str(item["filename"])
             extension = Path(filename).suffix.lower()
-            if extension in MESH_EXTENSIONS and "model" not in files:
+            if concept:
+                if extension not in IMAGE_EXTENSIONS or "concept" in files or item.get("type") != "output":
+                    continue
+                role = "concept"  # image 2D uniquement : jamais présentée comme un modèle 3D
+            elif extension in MESH_EXTENSIONS and "model" not in files:
                 role = "model"
             elif extension in IMAGE_EXTENSIONS and "base_color" not in files and item.get("type") == "output":
                 role = "base_color"

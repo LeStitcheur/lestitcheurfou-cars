@@ -50,6 +50,7 @@ EXPECTED = (AIError, EditError, OSError, ValueError)
 class AIVehicleCreatorPage(QWidget):
     editor_requested = Signal()
     livery_requested = Signal()
+    lore_requested = Signal()
 
     def __init__(
         self, controller, settings, manager: AIEngineManager | None = None, parent: QWidget | None = None

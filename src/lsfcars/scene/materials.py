@@ -1,4 +1,5 @@
-"""Matériaux PBR simplifiés : couleur, rugosité, métallicité, opacité, textures, UV, preset."""
+"""Matériaux PBR simplifiés : couleur, rugosité, métallicité, opacité, textures, UV, preset,
+émission (v0.8 : optiques et signatures lumineuses, prévisualisation viewport uniquement)."""
 
 from __future__ import annotations
 
@@ -20,8 +21,19 @@ EDITABLE_FIELDS = (
     "uv_offset",
     "preset",
     "gta_shader",
+    "emissive",
+    "emissive_strength",
 )
-EXTRA_FIELDS = ("normal_texture", "normal_strength", "uv_scale", "uv_offset", "preset", "gta_shader")
+EXTRA_FIELDS = (
+    "normal_texture",
+    "normal_strength",
+    "uv_scale",
+    "uv_offset",
+    "preset",
+    "gta_shader",
+    "emissive",
+    "emissive_strength",
+)
 
 
 def new_material_id() -> str:
@@ -56,6 +68,8 @@ class Material:
     uv_offset: tuple[float, float] = (0.0, 0.0)
     preset: str = ""  # preset automobile d'origine (peinture brillante, chrome…)
     gta_shader: str = ""  # shader GTA V suggéré (indicatif, correspondance non garantie)
+    emissive: tuple[float, float, float] = (0.0, 0.0, 0.0)  # couleur émise (viewport)
+    emissive_strength: float = 0.0  # 0 = aucune émission
 
     def __post_init__(self) -> None:
         rgba = [*self.base_color, 1.0, 1.0, 1.0, 1.0][:4]
@@ -68,6 +82,9 @@ class Material:
         self.uv_offset = _pair(self.uv_offset, 0.0)
         self.preset = str(self.preset or "")
         self.gta_shader = str(self.gta_shader or "")
+        rgb = [*self.emissive, 0.0, 0.0, 0.0][:3] if self.emissive is not None else [0.0, 0.0, 0.0]
+        self.emissive = tuple(_clamp01(c) for c in rgb)  # type: ignore[assignment]
+        self.emissive_strength = max(0.0, min(8.0, float(self.emissive_strength or 0.0)))
 
     @property
     def is_transparent(self) -> bool:
@@ -94,6 +111,7 @@ class Material:
         data["base_color"] = list(self.base_color)
         data["uv_scale"] = list(self.uv_scale)
         data["uv_offset"] = list(self.uv_offset)
+        data["emissive"] = list(self.emissive)
         return data
 
     def extra_dict(self) -> dict:
@@ -101,7 +119,12 @@ class Material:
         data = {key: getattr(self, key) for key in EXTRA_FIELDS}
         data["uv_scale"] = list(self.uv_scale)
         data["uv_offset"] = list(self.uv_offset)
+        data["emissive"] = list(self.emissive)
         return data
+
+    @property
+    def is_emissive(self) -> bool:
+        return self.emissive_strength > 0 and max(self.emissive) > 0
 
     @classmethod
     def from_dict(cls, data: dict) -> Material:

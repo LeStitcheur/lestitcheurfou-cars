@@ -174,6 +174,13 @@ peuvent disparaître.
 > Remplacer un logo ne suffit pas à garantir le respect des droits de propriété intellectuelle :
 > formes, calandres et signatures lumineuses peuvent aussi être protégées.
 
+Depuis la v0.8, la transformation complète d'un véhicule (marques, Design DNA, studios,
+comparaison, provenance) se fait dans **Lore Friendly Studio** ; voir
+[LORE_FRIENDLY_ENGINE.md](LORE_FRIENDLY_ENGINE.md). Les adaptateurs y gagnent deux capacités
+explicites, testées contre des serveurs simulés uniquement : « plan de transformation » (Claude,
+résumé texte seulement) et « image conceptuelle 2D » (ComfyUI, workflow dédié — jamais un modèle
+3D).
+
 ## AI Mesh Assistant
 
 Ses quatre catégories sont affichées séparément.

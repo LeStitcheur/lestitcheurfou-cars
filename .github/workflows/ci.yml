@@ -53,6 +53,10 @@ jobs:
           pip install -e ".[dev]"
       - name: Lancer les tests
         run: pytest -ra --junitxml=pytest-report.xml
+      - name: Test de démarrage (application complète, rendu logiciel)
+        if: matrix.python == '3.12'
+        # Code de sortie : 0 = tout fonctionne ; 3 à 9 = module en échec (voir lsfcars/app.py).
+        run: python -m lsfcars --smoke-test 1500
       - name: Publier le rapport de tests
         if: always()
         uses: actions/upload-artifact@v4
