@@ -403,6 +403,7 @@ class HierarchyTree(QWidget):
 class VehiclePanel(QWidget):
     preview_requested = Signal(str, bool)  # nom du modèle, variante _hi
     import_requested = Signal()
+    model_import_requested = Signal(str)  # chemin (dans la ressource) d'un modèle 3D standard
 
     def __init__(self) -> None:
         super().__init__()
@@ -441,6 +442,29 @@ class VehiclePanel(QWidget):
         layout.addWidget(self.info)
         self.warnings = label("", "warning", wrap=True)
         layout.addWidget(self.warnings)
+        self.generic = QWidget()
+        generic = QVBoxLayout(self.generic)
+        generic.setContentsMargins(0, 0, 0, 0)
+        generic.setSpacing(8)
+        generic.addWidget(separator())
+        generic.addWidget(label("Modèle 3D standard", "h3"))
+        generic.addWidget(
+            label(
+                "Ce fichier n'est pas un véhicule FiveM (.yft) : il s'importe comme un modèle 3D "
+                "ordinaire, puis se modifie dans le Studio. Aucune compatibilité FiveM n'est garantie.",
+                "subtitle",
+                wrap=True,
+            )
+        )
+        self.generic_models = LSSelect()
+        generic.addWidget(self.generic_models)
+        self.generic_import = LSButton("Importer comme modèle 3D", "primary", "import")
+        self.generic_import.clicked.connect(
+            lambda: self.model_import_requested.emit(self.generic_models.currentData() or "")
+        )
+        tooltip(self.generic_import, "Copie le fichier dans le projet ouvert (l'original reste intact)")
+        generic.addWidget(self.generic_import)
+        layout.addWidget(self.generic)
         layout.addWidget(separator())
         layout.addWidget(label("Sélection", "h3"))
         self.selection = KeyValueGrid()
@@ -470,6 +494,10 @@ class VehiclePanel(QWidget):
             for model in analysis.models:
                 prefix = "Véhicule" if model.is_vehicle else "Modèle"
                 self.models.addItem(f"{prefix} · {model.name}  ({model.status.label.lower()})", model.name)
+        self.generic_models.clear()
+        for item in analysis.generic_models if analysis is not None else []:
+            self.generic_models.addItem(f"{item.path}  ({item.message})", item.path)
+        self.generic.setVisible(self.generic_models.count() > 0)
         self.models.blockSignals(False)
         self._model_changed()
         self.show_selection([])

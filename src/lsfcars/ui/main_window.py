@@ -302,6 +302,7 @@ class MainWindow(QMainWindow):
         self.import_page.notify.connect(lambda title, msg, level: self.notify(title, msg, level))
         self.import_page.error.connect(self.error)
         self.import_page.imported.connect(self._on_resource_imported)
+        self.import_page.model_import_requested.connect(self.import_model)
         self.emergency.editor_requested.connect(lambda: self.navigate("studio"))
         self.livery.editor_requested.connect(lambda: self.navigate("studio"))
         self.ai.editor_requested.connect(lambda: self.navigate("studio"))

@@ -183,6 +183,7 @@ class VehicleImportStudio(QWidget):
     notify = Signal(str, str, str)  # titre, message, niveau
     error = Signal(str, str)
     imported = Signal(str)  # identifiant du nœud racine importé
+    model_import_requested = Signal(str)  # chemin local d'un modèle 3D standard
     analysis_finished = Signal(bool)
     preview_finished = Signal(bool)
     busy_changed = Signal(bool)
@@ -400,6 +401,7 @@ class VehicleImportStudio(QWidget):
         self.diagnostics.file_requested.connect(self._reveal_file)
         self.vehicle.preview_requested.connect(self.preview_model)
         self.vehicle.import_requested.connect(self.import_to_project)
+        self.vehicle.model_import_requested.connect(self.import_generic_model)
         self.hierarchy.nodes_selected.connect(self._select_nodes)
         self.hierarchy.visibility_changed.connect(self._visibility_changed)
         self.stats.node_requested.connect(lambda node_id: self._select_nodes([node_id]))
@@ -826,6 +828,19 @@ class VehicleImportStudio(QWidget):
             "success",
         )
         self.imported.emit(root_id)
+        return True
+
+    def import_generic_model(self, path: str) -> bool:
+        """Modèle 3D standard (GLB, glTF, OBJ, FBX) : confié à l'import 3D de l'application."""
+        item = self.analysis.find(path) if self.analysis is not None and path else None
+        if item is None:
+            return False
+        try:
+            local = self.analysis.local_model_path(item)
+        except OSError as exc:
+            self.error.emit("Import impossible", f"Extraction de {item.name} impossible : {exc}")
+            return False
+        self.model_import_requested.emit(str(local))
         return True
 
     # --- Blender / Sollumz -------------------------------------------------------

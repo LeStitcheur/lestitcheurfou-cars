@@ -7,6 +7,13 @@ versionnement [SemVer](https://semver.org/lang/fr/).
 
 ### Corrigé
 
+- Vehicle Import Studio : un modèle 3D standard (GLB, glTF, OBJ, FBX) ouvert seul ou dans un
+  dossier / ZIP était analysé (« 8 000 triangles ») mais ne pouvait pas être importé, la page
+  n'important que les véhicules FiveM (`.yft`). Une section **Modèle 3D standard** propose
+  désormais « Importer comme modèle 3D » (import 3D habituel, original intact ; fichiers voisins
+  extraits pour une archive). Le statut global reste celui de la ressource FiveM : un GLB n'est
+  jamais déclaré compatible FiveM.
+
 - TripoSR : « Détourage impossible » sur les vraies photos (décor, route, parking). Le fond est
   désormais retiré par le réseau **U²-Net** (modèle Apache-2.0 distribué par le projet rembg,
   exécuté avec onnxruntime dans l'environnement du moteur) quand l'image n'est pas déjà

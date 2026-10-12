@@ -81,6 +81,7 @@ FORMAT_SUPPORT: dict[str, tuple[str, str]] = {
     ".png": ("Image PNG", "Aperçu"),
 }
 AUDIO = {".awc", ".rel", ".oac", ".nametable"}
+GENERIC_MODELS = (".obj", ".glb", ".gltf", ".fbx")  # modèles 3D standard (non FiveM)
 
 
 class AnalysisCancelled(Exception):
@@ -192,6 +193,31 @@ class ResourceAnalysis:
 
     def model(self, name: str) -> VehicleModel | None:
         return next((m for m in self.models if m.name.lower() == name.lower()), None)
+
+    @property
+    def generic_models(self) -> list[ResourceFile]:
+        """Modèles 3D standard lisibles (GLB, glTF, OBJ, FBX) : importables comme modèle 3D."""
+        return [f for f in self.files if f.extension in GENERIC_MODELS and f.status is Status.COMPATIBLE]
+
+    def local_model_path(self, item: ResourceFile) -> Path:
+        """Chemin local d'un modèle standard : fichier d'origine, ou copie extraite d'une archive.
+
+        Pour une archive, les fichiers du même dossier (tampons .bin, textures, .mtl) sont
+        extraits à côté du modèle pour que ses références relatives restent valides.
+        """
+        if self.source_kind == "fichier":
+            return self.source
+        if self.source_kind == "dossier":
+            return self.source / item.path
+        folder = item.path.rpartition("/")[0]
+        target_root = self.temp_dir() / "modeles"
+        for other in self.files:
+            if other.path.rpartition("/")[0] == folder:
+                target = target_root / other.path
+                target.parent.mkdir(parents=True, exist_ok=True)
+                if not target.exists():
+                    target.write_bytes(other.read())
+        return target_root / item.path
 
     def temp_dir(self) -> Path:
         if self._temp is None:
@@ -513,7 +539,7 @@ def _validate(item: ResourceFile, analysis: ResourceAnalysis, cancel: Callable[[
         )
     elif ext in (".dds", ".png", ".jpg", ".jpeg"):
         _validate_image(item)
-    elif ext in (".obj", ".glb", ".gltf", ".fbx"):
+    elif ext in GENERIC_MODELS:
         _validate_generic_model(item, analysis)
     elif ext in AUDIO:
         item.set(Status.UNSUPPORTED, "Audio : reconnu, non utilisé par le studio.")

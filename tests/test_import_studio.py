@@ -124,3 +124,40 @@ def test_dark_premium_palette_only():
     palette = set(tokens.ColorTokens.PALETTE)
     assert len(palette) == 12
     assert tokens.ACCENT == "#2563eb" and tokens.ACCENT_2 == "#38bdf8"
+
+
+def test_import_studio_imports_standard_models(window, qtbot, projects_dir, tmp_path):
+    """Un GLB ouvert dans le Vehicle Import Studio (dossier ou ZIP) s'importe comme modèle 3D."""
+    import zipfile
+
+    import trimesh
+
+    folder = tmp_path / "prototype"
+    folder.mkdir()
+    parts = [trimesh.creation.box((1, 0.4, 0.3)), trimesh.creation.cylinder(0.3, 0.15)]
+    trimesh.Scene(parts).export(folder / "moto.glb")
+    (folder / "README.md").write_text("notes", encoding="utf-8")
+    page = window.import_page
+    window.navigate("import")
+    analyze(page, qtbot, folder)
+    assert page.overall.text() != "Compatible"  # un GLB n'est jamais déclaré compatible FiveM
+    assert page.vehicle.current_model() is None and not page.vehicle.import_button.isEnabled()
+    assert page.vehicle.generic.isVisibleTo(page.vehicle)
+    assert page.vehicle.generic_models.currentData() == "moto.glb"
+    request = NewProjectRequest("Moto", projects_dir, VehicleType.MOTORCYCLE, VehicleRole.EMS, "")
+    assert window.new_project(request)
+    window.navigate("import")
+    with qtbot.waitSignal(window.controller.import_finished, timeout=60000) as blocker:
+        page.vehicle.generic_import.click()
+    assert blocker.args[0], blocker.args[1]
+    assert window.current_page() == "studio"
+    session = window.controller.session
+    assert session.stats()[0] == sum(len(p.faces) for p in parts)
+    assert (folder / "moto.glb").is_file()  # original intact
+
+    archive = tmp_path / "prototype.zip"
+    with zipfile.ZipFile(archive, "w") as zf:
+        zf.write(folder / "moto.glb", "modeles/moto.glb")
+    analyze(page, qtbot, archive)
+    local = page.analysis.local_model_path(page.analysis.find("modeles/moto.glb"))
+    assert local.is_file() and local.read_bytes() == (folder / "moto.glb").read_bytes()
